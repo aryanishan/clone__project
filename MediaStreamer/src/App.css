@@ -1,7 +1,43 @@
+/* App.css */
 #root {
   width: 100%;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  text-align: left;
+  min-height: 100vh;
+  background-color: var(--yt-black);
+}
+
+/* Global utility classes */
+.yt-container {
+  max-width: 2000px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .yt-container {
+    padding: 0 var(--space-md);
+  }
+}
+
+/* Print styles */
+@media print {
+  .yt-no-print {
+    display: none !important;
+  }
 }

@@ -1,121 +1,154 @@
+// pages/Home.jsx
 import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import styles from './Page.module.css'
 import { fetchTrending, searchVideos } from '../lib/api'
-import Navbar from '../components/Navbar'
+import VideoCard from '../components/VideoCard'
+import CategoryFilters from '../components/CategoryFilters'
 
-const fallback = Array.from({ length: 12 }).map((_, i) => ({
-  id: String(i + 1),
-  title: `Sample Video ${i + 1}`,
-  channel: `Channel ${(i % 5) + 1}`,
-  views: `${(i + 1) * 10}K views`,
-  time: `${(i % 12) + 1} days ago`,
-  description: '',
-  thumbnail: `https://picsum.photos/seed/${i + 1}/320/180`,
-}))
+const categories = [
+  'All', 'Music', 'Gaming', 'News', 'Sports', 'Learning', 
+  'Movies', 'TV', 'Fashion', 'Beauty', 'Tech', 'Travel'
+]
 
 export default function Home() {
   const [searchParams] = useSearchParams()
   const query = searchParams.get('search')
-  const [videos, setVideos] = useState(fallback)
-  const [loading, setLoading] = useState(false)
+  const [videos, setVideos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState('All')
 
   useEffect(() => {
-    let cancelled = false
-    fetchTrending()
-      .then((list) => {
-        if (!cancelled && list.length) setVideos(list)
-      })
-      .catch(() => {
-        // keep fallback on error
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    let loadingTimer = null
-    const t = setTimeout(() => {
-      if (!query) {
-        fetchTrending()
-          .then((list) => !cancelled && list.length && setVideos(list))
-          .catch(() => {
-            if (!cancelled) setVideos(fallback)
-          })
-        return
+    let mounted = true
+    
+    const loadVideos = async () => {
+      setLoading(true)
+      try {
+        let results
+        if (query) {
+          results = await searchVideos(query)
+        } else {
+          results = await fetchTrending()
+        }
+        if (mounted) {
+          setVideos(results)
+        }
+      } catch (error) {
+        console.error('Failed to load videos:', error)
+        if (mounted) {
+          setVideos([])
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
+    }
 
-      loadingTimer = setTimeout(() => setLoading(true), 0)
-      searchVideos(query)
-        .then((list) => {
-          if (cancelled) return
-          if (list && list.length) setVideos(list)
-          else {
-            const q = query.toLowerCase()
-            setVideos(
-              fallback.filter(
-                (v) => v.title.toLowerCase().includes(q) || v.channel.toLowerCase().includes(q)
-              )
-            )
-          }
-        })
-        .catch(() => {
-          if (cancelled) return
-          const q = query.toLowerCase()
-          setVideos(
-            fallback.filter(
-              (v) => v.title.toLowerCase().includes(q) || v.channel.toLowerCase().includes(q)
-            )
-          )
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 400)
+    loadVideos()
 
     return () => {
-      cancelled = true
-      clearTimeout(t)
-      if (loadingTimer) clearTimeout(loadingTimer)
+      mounted = false
     }
   }, [query])
 
   return (
-    <div>
-      <Navbar />
-      <main className={styles.container}>
-        <div style={{ marginBottom: 8, color: '#bbb' }}>
-          {loading ? 'Loading...' : query ? `Results for "${query}"` : 'Trending Videos'}
-        </div>
-
-        <div className={styles.grid}>
-          {videos.map((v) => (
-            <Link to={`/watch/${v.id}`} key={v.id} className={styles.card}>
-              <div className={styles.thumb} aria-hidden>
-                {v.thumbnail ? (
-                  <img src={v.thumbnail} alt={v.title} className={styles.thumbImg} />
-                ) : (
-                  <span className={styles.playIcon}>▶</span>
-                )}
+    <div className="yt-home">
+      <CategoryFilters 
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+      
+      <main className="yt-home-content">
+        {loading ? (
+          <div className="yt-loading">
+            <div className="yt-spinner"></div>
+          </div>
+        ) : (
+          <>
+            {query && (
+              <div className="yt-search-header">
+                Search results for "{query}"
               </div>
-              <div className={styles.meta}>
-                <h3 className={styles.vtitle}>{v.title}</h3>
-                <p className={styles.channel}>{v.channel}</p>
-                <p className={styles.stats}>
-                  {v.views} • {new Date(v.time).toLocaleDateString()}
-                </p>
+            )}
+            
+            <div className="yt-video-grid">
+              {videos.map((video) => (
+                <VideoCard key={video.id} video={video} />
+              ))}
+            </div>
+            
+            {videos.length === 0 && (
+              <div className="yt-no-results">
+                <h3>No videos found</h3>
+                <p>Try different keywords or check back later</p>
               </div>
-            </Link>
-          ))}
-        </div>
-
-        {videos.length === 0 && <p className={styles.noResults}>No videos found.</p>}
+            )}
+          </>
+        )}
       </main>
+
+      <style jsx>{`
+        .yt-home {
+          min-height: 100vh;
+        }
+        
+        .yt-home-content {
+          max-width: 2000px;
+          margin: 0 auto;
+        }
+        
+        .yt-search-header {
+          margin-bottom: var(--space-lg);
+          color: var(--yt-white-darker);
+          font-size: var(--font-md);
+        }
+        
+        .yt-video-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: var(--space-xl) var(--space-lg);
+        }
+        
+        .yt-loading {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 400px;
+        }
+        
+        .yt-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid var(--yt-gray);
+          border-top-color: var(--yt-red);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .yt-no-results {
+          text-align: center;
+          padding: var(--space-2xl);
+          color: var(--yt-white-darker);
+        }
+        
+        .yt-no-results h3 {
+          font-size: var(--font-xl);
+          margin-bottom: var(--space-sm);
+          color: var(--yt-white);
+        }
+        
+        @media (max-width: 768px) {
+          .yt-video-grid {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: var(--space-lg);
+          }
+        }
+      `}</style>
     </div>
   )
 }

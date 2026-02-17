@@ -1,28 +1,35 @@
-import React from 'react'
+// components/sidebar.jsx
+import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 export default function Sidebar() {
+  const [isExpanded, setIsExpanded] = useState(false)
   const location = useLocation()
-  const isExpanded = false
 
   const menuItems = [
-    { icon: 'home', label: 'Home', path: '/', active: location.pathname === '/' },
-    { icon: 'shorts', label: 'Shorts', path: '/shorts', active: location.pathname === '/shorts' },
-    { icon: 'subscriptions', label: 'Subscriptions', path: '/subscriptions', active: location.pathname === '/subscriptions' },
+    { icon: 'home', label: 'Home', path: '/' },
+    { icon: 'shorts', label: 'Shorts', path: '/shorts' },
+    { icon: 'subscriptions', label: 'Subscriptions', path: '/subscriptions' },
   ]
 
   const libraryItems = [
-    { icon: 'library', label: 'Library', path: '/library', active: location.pathname === '/library' },
-    { icon: 'history', label: 'History', path: '/history', active: location.pathname === '/history' },
-    { icon: 'yourVideos', label: 'Your videos', path: '/my-videos', active: location.pathname === '/my-videos' },
-    { icon: 'watchLater', label: 'Watch later', path: '/watch-later', active: location.pathname === '/watch-later' },
-    { icon: 'liked', label: 'Liked videos', path: '/liked', active: location.pathname === '/liked' },
+    { icon: 'library', label: 'Library', path: '/library' },
+    { icon: 'history', label: 'History', path: '/history' },
+    { icon: 'yourVideos', label: 'Your videos', path: '/my-videos' },
+    { icon: 'watchLater', label: 'Watch later', path: '/watch-later' },
+    { icon: 'liked', label: 'Liked videos', path: '/liked' },
   ]
 
-  const getIcon = (iconName, isActive) => {
-    const color = isActive ? 'white' : '#aaaaaa'
+  const subscriptions = [
+    { name: 'Channel 1', avatar: 'C1' },
+    { name: 'Channel 2', avatar: 'C2' },
+    { name: 'Channel 3', avatar: 'C3' },
+  ]
+
+  const renderIcon = (iconName, isActive) => {
+    const color = isActive ? 'var(--yt-white)' : 'currentColor'
     const size = 24
-    
+
     switch(iconName) {
       case 'home':
         return (
@@ -78,121 +85,184 @@ export default function Sidebar() {
   }
 
   return (
-    <aside style={{
-      ...styles.sidebar,
-      width: isExpanded ? '240px' : '72px'
-    }}>
-      <div style={styles.section}>
-        {menuItems.map((item, index) => (
-          <Link
-            key={index}
-            to={item.path}
-            style={{
-              ...styles.menuItem,
-              backgroundColor: item.active ? '#272727' : 'transparent',
-            }}
-          >
-            <div style={styles.iconContainer}>
-              {getIcon(item.icon, item.active)}
+    <aside 
+      className={`yt-sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
+      <div className="yt-sidebar-content">
+        {/* Main Menu */}
+        <div className="yt-sidebar-section">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`yt-sidebar-item ${isActive ? 'active' : ''}`}
+              >
+                <div className="yt-sidebar-icon">
+                  {renderIcon(item.icon, isActive)}
+                </div>
+                {(isExpanded) && (
+                  <span className="yt-sidebar-label">{item.label}</span>
+                )}
+              </Link>
+            )
+          })}
+        </div>
+
+        <div className="yt-sidebar-divider" />
+
+        {/* Library */}
+        <div className="yt-sidebar-section">
+          {libraryItems.map((item) => {
+            const isActive = location.pathname === item.path
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`yt-sidebar-item ${isActive ? 'active' : ''}`}
+              >
+                <div className="yt-sidebar-icon">
+                  {renderIcon(item.icon, isActive)}
+                </div>
+                {(isExpanded) && (
+                  <span className="yt-sidebar-label">{item.label}</span>
+                )}
+              </Link>
+            )
+          })}
+        </div>
+
+        {isExpanded && (
+          <>
+            <div className="yt-sidebar-divider" />
+            
+            {/* Subscriptions */}
+            <div className="yt-sidebar-section">
+              <div className="yt-sidebar-header">Subscriptions</div>
+              {subscriptions.map((sub, index) => (
+                <div key={index} className="yt-sidebar-item">
+                  <div className="yt-sidebar-avatar">{sub.avatar}</div>
+                  <span className="yt-sidebar-label">{sub.name}</span>
+                </div>
+              ))}
             </div>
-            {!isExpanded && (
-              <span style={{
-                ...styles.label,
-                color: item.active ? 'white' : '#aaaaaa',
-                fontWeight: item.active ? '600' : '400',
-              }}>
-                {item.label}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
-
-      {!isExpanded && (
-        <div style={styles.divider} />
-      )}
-
-      <div style={styles.section}>
-        {!isExpanded && (
-          <div style={styles.sectionTitle}>Library</div>
+          </>
         )}
-        {libraryItems.map((item, index) => (
-          <Link
-            key={index}
-            to={item.path}
-            style={{
-              ...styles.menuItem,
-              backgroundColor: item.active ? '#272727' : 'transparent',
-            }}
-          >
-            <div style={styles.iconContainer}>
-              {getIcon(item.icon, item.active)}
-            </div>
-            {!isExpanded && (
-              <span style={{
-                ...styles.label,
-                color: item.active ? 'white' : '#aaaaaa',
-                fontWeight: item.active ? '600' : '400',
-              }}>
-                {item.label}
-              </span>
-            )}
-          </Link>
-        ))}
       </div>
+
+      <style jsx>{`
+        .yt-sidebar {
+          position: fixed;
+          left: 0;
+          top: 56px;
+          height: calc(100vh - 56px);
+          background-color: var(--yt-black);
+          transition: width var(--transition-base);
+          overflow-y: auto;
+          overflow-x: hidden;
+          z-index: 900;
+        }
+        
+        .yt-sidebar.collapsed {
+          width: 72px;
+        }
+        
+        .yt-sidebar.expanded {
+          width: 240px;
+          box-shadow: var(--shadow-lg);
+        }
+        
+        .yt-sidebar-content {
+          padding: var(--space-md) 0;
+        }
+        
+        .yt-sidebar-section {
+          padding: 0 var(--space-md);
+        }
+        
+        .yt-sidebar-item {
+          display: flex;
+          align-items: center;
+          padding: 0 var(--space-md);
+          height: 40px;
+          border-radius: var(--radius-md);
+          text-decoration: none;
+          color: var(--yt-white-dark);
+          margin-bottom: var(--space-xs);
+          cursor: pointer;
+          transition: background-color var(--transition-fast);
+        }
+        
+        .yt-sidebar-item:hover {
+          background-color: var(--yt-black-lighter);
+        }
+        
+        .yt-sidebar-item.active {
+          background-color: var(--yt-black-lighter);
+          color: var(--yt-white);
+          font-weight: 500;
+        }
+        
+        .yt-sidebar-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 24px;
+          margin-right: var(--space-xl);
+          color: inherit;
+        }
+        
+        .yt-sidebar-label {
+          font-size: var(--font-sm);
+          white-space: nowrap;
+          color: inherit;
+        }
+        
+        .yt-sidebar-divider {
+          height: 1px;
+          background-color: var(--yt-gray);
+          margin: var(--space-md) 0;
+        }
+        
+        .yt-sidebar-header {
+          font-size: var(--font-md);
+          font-weight: 500;
+          color: var(--yt-white);
+          padding: var(--space-sm) var(--space-md);
+          margin-bottom: var(--space-sm);
+        }
+        
+        .yt-sidebar-avatar {
+          width: 24px;
+          height: 24px;
+          border-radius: var(--radius-full);
+          background-color: var(--yt-gray);
+          color: var(--yt-white);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: var(--font-xs);
+          font-weight: 600;
+          margin-right: var(--space-xl);
+        }
+        
+        /* Scrollbar styling for sidebar */
+        .yt-sidebar::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .yt-sidebar::-webkit-scrollbar-thumb {
+          background: var(--yt-gray);
+          border-radius: var(--radius-full);
+        }
+        
+        .yt-sidebar::-webkit-scrollbar-thumb:hover {
+          background: var(--yt-gray-light);
+        }
+      `}</style>
     </aside>
   )
-}
-
-const styles = {
-  sidebar: {
-    backgroundColor: '#0f0f0f',
-    height: 'calc(100vh - 56px)',
-    position: 'sticky',
-    top: '56px',
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    transition: 'width 0.2s ease',
-    padding: '12px 0',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '0 12px',
-  },
-  menuItem: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 12px',
-    height: '40px',
-    borderRadius: '10px',
-    textDecoration: 'none',
-    color: 'white',
-    marginBottom: '4px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  iconContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: '24px',
-    marginRight: '24px',
-  },
-  label: {
-    fontSize: '14px',
-    whiteSpace: 'nowrap',
-  },
-  divider: {
-    height: '1px',
-    backgroundColor: '#3f3f3f',
-    margin: '12px 0',
-  },
-  sectionTitle: {
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: 'white',
-    padding: '8px 12px',
-    marginBottom: '8px',
-  },
 }

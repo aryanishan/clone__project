@@ -1,3 +1,4 @@
+// App.jsx
 import './App.css'
 import Home from './pages/Home'
 import Watch from './pages/Watch'
