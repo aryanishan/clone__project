@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 export default function Sidebar() {
   const location = useLocation()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const isExpanded = false
 
   const menuItems = [
     { icon: 'home', label: 'Home', path: '/', active: location.pathname === '/' },

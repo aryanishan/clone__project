@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import styles from './Page.module.css'
-import { getVideo, getRelatedVideos } from '../lib/api'
+import { getVideo, searchVideos } from '../lib/api'
 
 export default function Watch() {
   const { id } = useParams()
@@ -11,14 +11,16 @@ export default function Watch() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
     getVideo(id)
       .then((v) => {
         if (!cancelled && v) {
           setVideo(v)
-          // Fetch related/recommended videos based on title
-          getRelatedVideos(v.title)
-            .then(list => !cancelled && setRelated(list))
+          // Fetch related/recommended videos using a search by title as a simple proxy
+          searchVideos(v.title)
+            .then((list) => !cancelled && setRelated(list))
+            .catch(() => {
+              /* ignore related fetch errors */
+            })
         }
       })
       .catch(() => {

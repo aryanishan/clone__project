@@ -1,22 +1,16 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export default function Profile() {
-  const [user, setUser] = useState({
-    name: 'Demo User',
-    channel: 'Demo Channel',
-    videos: 12,
-    avatar: '',
-  })
-
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
+    const defaults = { name: 'Demo User', channel: 'Demo Channel', videos: 12, avatar: '' }
     try {
       const raw = localStorage.getItem('profile')
-      if (raw) setUser(JSON.parse(raw))
-    } catch (err) {
-      // ignore parse errors
+      return raw ? JSON.parse(raw) : defaults
+    } catch (_) {
+      return defaults
     }
-  }, [])
+  })
 
   function handleChange(e) {
     const { name, value } = e.target
