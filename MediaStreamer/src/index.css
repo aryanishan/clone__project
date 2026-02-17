@@ -1,15 +1,17 @@
 :root {
   --yt-primary: #ff0000;
   --yt-primary-hover: #cc0000;
-  --yt-text: #ffffff;
+  --yt-text: #f1f1f1;
   --yt-text-secondary: #aaaaaa;
   --yt-bg: #0f0f0f;
-  --yt-bg-secondary: #1f1f1f;
-  --yt-bg-tertiary: #272727;
+  --yt-bg-secondary: #272727;
+  --yt-bg-tertiary: #3f3f3f;
   --yt-border: #303030;
   --yt-sidebar-bg: #0f0f0f;
   --yt-navbar-bg: #0f0f0f;
   --yt-hover: #272727;
+  --yt-search-bg: #121212;
+  --yt-search-border: #303030;
   
   font-family: 'Roboto', Arial, sans-serif;
   line-height: 1.5;
@@ -21,6 +23,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="light"] {
+  --yt-text: #0f0f0f;
+  --yt-text-secondary: #606060;
+  --yt-bg: #ffffff;
+  --yt-bg-secondary: #f2f2f2;
+  --yt-bg-tertiary: #e5e5e5;
+  --yt-border: #e5e5e5;
+  --yt-sidebar-bg: #ffffff;
+  --yt-navbar-bg: #ffffff;
+  --yt-hover: #f2f2f2;
+  --yt-search-bg: #ffffff;
+  --yt-search-border: #ccc;
 }
 
 * {
@@ -35,10 +51,10 @@ body {
   min-height: 100vh;
   background-color: var(--yt-bg);
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 a {
-  font-weight: 500;
   color: var(--yt-text);
   text-decoration: none;
 }
@@ -54,7 +70,7 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: var(--yt-bg-tertiary);
+  background-color: var(--yt-bg-secondary);
   color: var(--yt-text);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -79,7 +95,7 @@ input {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #717171;
+  background: #ababaa;
   border-radius: 4px;
 }
 

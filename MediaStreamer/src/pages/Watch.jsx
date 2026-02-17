@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import styles from './Page.module.css'
 import { getVideo, searchVideos } from '../lib/api'
+import Navbar from '../components/Navbar'
 
 export default function Watch() {
   const { id } = useParams()
@@ -36,7 +37,8 @@ export default function Watch() {
 
   return (
     <div>
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
+      <Navbar />
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '1.5rem' }}>
         <div className={styles.player} aria-hidden>
           <iframe 
             width="100%" 

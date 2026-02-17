@@ -1,0 +1,88 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  height: 56px;
+  background-color: var(--yt-navbar-bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--yt-border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: -0.5px;
+  text-decoration: none;
+  color: var(--yt-text);
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 600px;
+  margin: 0 1rem;
+}
+
+.searchInput {
+  flex: 1;
+  background-color: var(--yt-search-bg);
+  border: 1px solid var(--yt-search-border);
+  border-right: none;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 40px 0 0 40px;
+  color: var(--yt-text);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: #1c62b9;
+}
+
+.searchBtn {
+  background-color: var(--yt-bg-secondary);
+  border: 1px solid var(--yt-search-border);
+  padding: 0.5rem 1.25rem;
+  border-radius: 0 40px 40px 0;
+  cursor: pointer;
+  color: var(--yt-text);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.iconBtn {
+  background: transparent;
+  border: none;
+  color: var(--yt-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background-color: #5c6bc0;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import styles from './Page.module.css'
 import { fetchTrending, searchVideos } from '../lib/api'
+import Navbar from '../components/Navbar'
 
 const fallback = Array.from({ length: 12 }).map((_, i) => ({
   id: String(i + 1),
@@ -85,10 +86,9 @@ export default function Home() {
   }, [query])
 
   return (
-    <div className={styles.container}>
-      {/* Removed internal header/search input as Navbar handles it */}
-
-      <main>
+    <div>
+      <Navbar />
+      <main className={styles.container}>
         <div style={{ marginBottom: 8, color: '#bbb' }}>
           {loading ? 'Loading...' : query ? `Results for "${query}"` : 'Trending Videos'}
         </div>
