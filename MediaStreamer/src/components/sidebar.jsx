@@ -38,7 +38,7 @@ export default function Sidebar() {
 const styles = {
   sidebar: {
     width: '200px',
-    backgroundColor: '#0f0f0f',
+    backgroundColor: '#000000',
     height: 'calc(100vh - 56px)',
     position: 'sticky',
     top: '56px',

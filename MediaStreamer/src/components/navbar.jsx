@@ -80,7 +80,7 @@ const styles = {
     justifyContent: 'space-between',
     padding: '0 16px',
     height: '56px',
-    backgroundColor: '#0f0f0f',
+    backgroundColor: '#000000',
     borderBottom: '1px solid #303030',
   },
   leftSection: {

@@ -22,7 +22,6 @@ const formatTimeAgo = (dateStr) => {
     { label: 'day', seconds: 86400 },
     { label: 'hour', seconds: 3600 },
     { label: 'minute', seconds: 60 },
-    { label: 'second', seconds: 1 }
   ]
   
   for (const interval of intervals) {
@@ -34,14 +33,21 @@ const formatTimeAgo = (dateStr) => {
   return 'just now'
 }
 
-export const fetchTrending = async (maxResults = 24) => {
+export const fetchTrending = async (maxResults = 12, pageToken = '') => {
   if (!API_KEY) throw new Error('YouTube API Key missing')
-  const res = await fetch(
-    `${BASE_URL}/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=${maxResults}&key=${API_KEY}`
-  )
+  
+  let url = `${BASE_URL}/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=${maxResults}&key=${API_KEY}`
+  
+  if (pageToken) {
+    url += `&pageToken=${pageToken}`
+  }
+  
+  const res = await fetch(url)
   if (!res.ok) throw new Error('Failed to fetch trending videos')
+  
   const data = await res.json()
-  return data.items.map((item) => ({
+  
+  const videos = data.items.map((item) => ({
     id: item.id,
     title: item.snippet.title,
     channel: item.snippet.channelTitle,
@@ -51,25 +57,44 @@ export const fetchTrending = async (maxResults = 24) => {
     thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
     description: item.snippet.description,
   }))
+  
+  return {
+    videos,
+    nextPageToken: data.nextPageToken || '',
+    prevPageToken: data.prevPageToken || '',
+    totalResults: data.pageInfo?.totalResults || 0,
+  }
 }
 
-export const searchVideos = async (query, maxResults = 24) => {
+export const searchVideos = async (query, maxResults = 12, pageToken = '') => {
   if (!API_KEY) throw new Error('YouTube API Key missing')
-  const searchRes = await fetch(
-    `${BASE_URL}/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=${maxResults}&key=${API_KEY}`
-  )
+  
+  let searchUrl = `${BASE_URL}/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=${maxResults}&key=${API_KEY}`
+  
+  if (pageToken) {
+    searchUrl += `&pageToken=${pageToken}`
+  }
+  
+  const searchRes = await fetch(searchUrl)
   if (!searchRes.ok) throw new Error('Failed to search videos')
+  
   const searchData = await searchRes.json()
   
   const videoIds = searchData.items.map(item => item.id.videoId).filter(Boolean)
-  if (videoIds.length === 0) return []
+  
+  if (videoIds.length === 0) {
+    return {
+      videos: [],
+      nextPageToken: searchData.nextPageToken || '',
+    }
+  }
   
   const videosRes = await fetch(
     `${BASE_URL}/videos?part=snippet,statistics&id=${videoIds.join(',')}&key=${API_KEY}`
   )
   const videosData = await videosRes.json()
   
-  return videosData.items.map((item) => ({
+  const videos = videosData.items.map((item) => ({
     id: item.id,
     title: item.snippet.title,
     channel: item.snippet.channelTitle,
@@ -79,14 +104,23 @@ export const searchVideos = async (query, maxResults = 24) => {
     thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
     description: item.snippet.description,
   }))
+  
+  return {
+    videos,
+    nextPageToken: searchData.nextPageToken || '',
+    prevPageToken: searchData.prevPageToken || '',
+    totalResults: searchData.pageInfo?.totalResults || 0,
+  }
 }
 
 export const getVideo = async (id) => {
   if (!API_KEY) throw new Error('YouTube API Key missing')
+  
   const res = await fetch(
     `${BASE_URL}/videos?part=snippet,statistics&id=${id}&key=${API_KEY}`
   )
   if (!res.ok) throw new Error('Failed to fetch video')
+  
   const data = await res.json()
   const item = data.items[0]
   if (!item) return null
@@ -102,21 +136,4 @@ export const getVideo = async (id) => {
     description: item.snippet.description,
     thumbnail: item.snippet.thumbnails.maxres?.url || item.snippet.thumbnails.high?.url,
   }
-}
-
-export const getChannelVideos = async (channelId, maxResults = 12) => {
-  if (!API_KEY) throw new Error('YouTube API Key missing')
-  const res = await fetch(
-    `${BASE_URL}/search?part=snippet&channelId=${channelId}&type=video&order=date&maxResults=${maxResults}&key=${API_KEY}`
-  )
-  if (!res.ok) throw new Error('Failed to fetch channel videos')
-  const data = await res.json()
-  
-  return data.items.map((item) => ({
-    id: item.id.videoId,
-    title: item.snippet.title,
-    channel: item.snippet.channelTitle,
-    thumbnail: item.snippet.thumbnails.medium?.url,
-    time: formatTimeAgo(item.snippet.publishedAt),
-  }))
 }
