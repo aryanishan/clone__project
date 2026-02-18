@@ -5,19 +5,22 @@ import Watch from './pages/Watch'
 import Profile from './pages/Profile'
 import { HistoryProvider } from './context/HistoryContext'
 import { SearchHistoryProvider } from './context/SearchHistoryContext'
+import { NotificationProvider } from './context/NotificationContext' // ✅ ADD THIS
 import './App.css'
 
 function App() {
   return (
     <HistoryProvider>
       <SearchHistoryProvider>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/watch/:id" element={<Watch />} />
-            <Route path="/profile" element={<Profile />} />
-          </Routes>
-        </Layout>
+        <NotificationProvider> {/* ✅ ADD THIS WRAPPER */}
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/watch/:id" element={<Watch />} />
+              <Route path="/profile" element={<Profile />} />
+            </Routes>
+          </Layout>
+        </NotificationProvider>
       </SearchHistoryProvider>
     </HistoryProvider>
   )

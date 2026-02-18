@@ -44,9 +44,9 @@ export default function Navbar({ sidebarOpen, setSidebarOpen }) {
             <MenuIcon />
           </button>
           <Link to="/" style={S.logo}>
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="#ff0000">
+            {/* <svg viewBox="0 0 24 24" width="26" height="26" fill="#ff0000">
               <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z" />
-            </svg>
+            </svg> */}
             <span style={S.logoText}>Streamr</span>
           </Link>
         </div>
@@ -142,7 +142,7 @@ const S = {
     position: 'fixed',
     top: 0, left: 0, right: 0,
     height: 56,
-    background: 'rgba(15,15,15,0.97)',
+    background: '#0d0d0d',
     backdropFilter: 'blur(10px)',
     borderBottom: '1px solid #1f1f1f',
     display: 'flex',
@@ -201,7 +201,7 @@ const S = {
     background: '#0d0d0d',
     border: '1.5px solid #2a2a2a',
     borderRight: 'none',
-    borderRadius: '22px 0 0 22px',
+    borderRadius: '10px 0 0 10px',
     color: '#fff',
     fontSize: 15,
     outline: 'none',
@@ -212,7 +212,7 @@ const S = {
     background: '#1e1e1e',
     border: '1.5px solid #2a2a2a',
     borderLeft: 'none',
-    borderRadius: '0 22px 22px 0',
+    borderRadius: '0 10px 10px 0',
     color: '#aaa',
     cursor: 'pointer',
     display: 'flex',
