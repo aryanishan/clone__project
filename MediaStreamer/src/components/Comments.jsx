@@ -1,316 +1,286 @@
 // components/Comments.jsx
 import React, { useState } from 'react'
 
+const INITIAL_COMMENTS = [
+  { id: 1, author: 'Alex Johnson', avatar: 'AJ', text: 'Still an absolute banger. Never gets old 🔥', likes: 4821, time: '3 days ago' },
+  { id: 2, author: 'Sarah K',      avatar: 'SK', text: 'This brings back SO many memories. Pure nostalgia in video form.', likes: 2134, time: '1 week ago' },
+  { id: 3, author: 'MusicFan99',   avatar: 'MF', text: 'The algorithm blessed me today. Absolutely legendary content.', likes: 987,  time: '2 weeks ago' },
+  { id: 4, author: 'Dana Lee',     avatar: 'DL', text: "I've had this on repeat for an hour and I regret nothing 😂", likes: 543, time: '1 month ago' },
+]
+
+const COLORS = ['#3ea6ff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff9f43']
+const avatarColor = (t) => COLORS[(t || '?').charCodeAt(0) % COLORS.length]
+
 export default function Comments({ videoId }) {
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      author: 'John Doe',
-      avatar: 'JD',
-      text: 'Amazing video! Really enjoyed the content. 🔥',
-      timestamp: '2 hours ago',
-      likes: 245,
-      replies: 12
-    },
-    {
-      id: 2,
-      author: 'Jane Smith',
-      avatar: 'JS',
-      text: 'First time watching your channel. Subscribed! 👍',
-      timestamp: '5 hours ago',
-      likes: 89,
-      replies: 3
-    },
-    {
-      id: 3,
-      author: 'Mike Johnson',
-      avatar: 'MJ',
-      text: 'The editing is top notch. Keep up the great work!',
-      timestamp: '1 day ago',
-      likes: 567,
-      replies: 23
-    }
-  ])
-  
-  const [newComment, setNewComment] = useState('')
+  const [comments, setComments] = useState(INITIAL_COMMENTS)
+  const [newText, setNewText] = useState('')
   const [sortBy, setSortBy] = useState('top')
 
-  const handleSubmitComment = (e) => {
-    e.preventDefault()
-    if (!newComment.trim()) return
-    
-    const comment = {
-      id: Date.now(),
-      author: 'You',
-      avatar: 'U',
-      text: newComment,
-      timestamp: 'Just now',
-      likes: 0,
-      replies: 0
-    }
-    
-    setComments([comment, ...comments])
-    setNewComment('')
+  const sorted = [...comments].sort((a, b) =>
+    sortBy === 'top' ? b.likes - a.likes : b.id - a.id
+  )
+
+  const submit = () => {
+    if (!newText.trim()) return
+    setComments(prev => [
+      { id: Date.now(), author: 'You', avatar: 'U', text: newText.trim(), likes: 0, time: 'Just now' },
+      ...prev,
+    ])
+    setNewText('')
   }
 
-  const sortedComments = [...comments].sort((a, b) => {
-    if (sortBy === 'top') return b.likes - a.likes
-    return new Date(b.timestamp) - new Date(a.timestamp)
-  })
+  return (
+    <>
+      <style>{css}</style>
+      <div style={S.wrap}>
+
+        {/* Header */}
+        <div style={S.header}>
+          <h3 style={S.count}>{comments.length} Comments</h3>
+          <div style={S.sortRow}>
+            <SortIcon />
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              style={S.sortSelect}
+            >
+              <option value="top">Top comments</option>
+              <option value="new">Newest first</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Add comment */}
+        <div style={S.addRow}>
+          <div style={{ ...S.avatar, background: avatarColor('U') }}>U</div>
+          <div style={S.addRight}>
+            <input
+              className="cm-input"
+              type="text"
+              placeholder="Add a comment…"
+              value={newText}
+              onChange={e => setNewText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && submit()}
+              style={S.input}
+            />
+            {newText && (
+              <div style={S.addActions}>
+                <button className="cm-cancel" style={S.cancelBtn} onClick={() => setNewText('')}>Cancel</button>
+                <button className="cm-submit" style={S.submitBtn} onClick={submit}>Comment</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* List */}
+        <div style={S.list}>
+          {sorted.map(c => (
+            <CommentItem key={c.id} comment={c} />
+          ))}
+        </div>
+
+      </div>
+    </>
+  )
+}
+
+function CommentItem({ comment: c }) {
+  const [liked, setLiked] = useState(false)
+  const [showReply, setShowReply] = useState(false)
 
   return (
-    <div style={styles.container}>
-      {/* Comments Header */}
-      <div style={styles.header}>
-        <h3 style={styles.title}>{comments.length} Comments</h3>
-        <div style={styles.sortContainer}>
-          <span style={styles.sortIcon}>↕️</span>
-          <select 
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={styles.sortSelect}
-          >
-            <option value="top">Top comments</option>
-            <option value="newest">Newest first</option>
-          </select>
-        </div>
+    <div style={S.comment}>
+      <div style={{ ...S.avatar, background: avatarColor(c.avatar) }}>
+        {c.avatar.slice(0, 2)}
       </div>
-
-      {/* Add Comment */}
-      <form onSubmit={handleSubmitComment} style={styles.addComment}>
-        <div style={styles.commentAvatar}>U</div>
-        <div style={styles.commentInputContainer}>
-          <input
-            type="text"
-            placeholder="Add a comment..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            style={styles.commentInput}
-          />
-          <div style={styles.commentActions}>
-            <button 
-              type="button"
-              onClick={() => setNewComment('')}
-              style={styles.cancelButton}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              disabled={!newComment.trim()}
-              style={{
-                ...styles.submitButton,
-                opacity: !newComment.trim() ? 0.5 : 1,
-                cursor: !newComment.trim() ? 'not-allowed' : 'pointer'
-              }}
-            >
-              Comment
-            </button>
-          </div>
+      <div style={S.commentBody}>
+        <p style={S.commentMeta}>
+          <span style={S.authorName}>{c.author}</span>
+          <span style={S.commentTime}> · {c.time}</span>
+        </p>
+        <p style={S.commentText}>{c.text}</p>
+        <div style={S.commentActions}>
+          <button
+            className="cm-act"
+            style={{ ...S.actBtn, color: liked ? '#3ea6ff' : '#aaa' }}
+            onClick={() => setLiked(l => !l)}
+          >
+            <ThumbIcon />
+            <span>{liked ? c.likes + 1 : c.likes > 0 ? c.likes.toLocaleString() : ''}</span>
+          </button>
+          <button className="cm-act" style={S.actBtn}>
+            <ThumbDownIcon />
+          </button>
+          <button className="cm-act" style={{ ...S.actBtn, fontWeight: 700 }} onClick={() => setShowReply(r => !r)}>
+            Reply
+          </button>
         </div>
-      </form>
-
-      {/* Comments List */}
-      <div style={styles.commentsList}>
-        {sortedComments.map(comment => (
-          <div key={comment.id} style={styles.comment}>
-            <div style={styles.commentAvatar}>
-              {comment.avatar}
-            </div>
-            <div style={styles.commentContent}>
-              <div style={styles.commentHeader}>
-                <span style={styles.commentAuthor}>{comment.author}</span>
-                <span style={styles.commentTime}>{comment.timestamp}</span>
-              </div>
-              <p style={styles.commentText}>{comment.text}</p>
-              <div style={styles.commentFooter}>
-                <button style={styles.commentAction}>
-                  <span style={styles.actionIcon}>👍</span>
-                  <span>{comment.likes}</span>
-                </button>
-                <button style={styles.commentAction}>
-                  <span style={styles.actionIcon}>👎</span>
-                </button>
-                <button style={styles.replyButton}>Reply</button>
-              </div>
-            </div>
+        {showReply && (
+          <div style={S.replyBox}>
+            <input
+              type="text"
+              placeholder="Add a reply…"
+              style={{ ...S.input, marginTop: 6 }}
+              onKeyDown={e => { if (e.key === 'Enter') setShowReply(false) }}
+            />
           </div>
-        ))}
+        )}
       </div>
     </div>
   )
 }
 
-const styles = {
-  container: {
-    marginTop: '24px',
-    paddingTop: '24px',
-    borderTop: '1px solid #303030',
+const css = `
+  .cm-input:focus    { border-bottom-color: #3ea6ff !important; outline: none; }
+  .cm-cancel:hover   { background: #2a2a2a !important; color: #fff !important; }
+  .cm-submit:hover   { background: #2988cc !important; }
+  .cm-act:hover      { background: rgba(255,255,255,0.08) !important; color: #fff !important; }
+`
+
+const S = {
+  wrap: {
+    marginTop: 26,
+    paddingTop: 26,
+    borderTop: '1px solid #1f1f1f',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '24px',
+    marginBottom: 24,
   },
-  title: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: 'white',
+  count: {
+    fontSize: 17,
+    fontWeight: 800,
+    color: '#fff',
   },
-  sortContainer: {
+  sortRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-  },
-  sortIcon: {
-    fontSize: '16px',
+    gap: 8,
+    color: '#aaa',
   },
   sortSelect: {
-    backgroundColor: 'transparent',
+    background: 'transparent',
     border: 'none',
     color: '#aaa',
-    fontSize: '14px',
+    fontSize: 14,
+    fontWeight: 600,
     cursor: 'pointer',
     outline: 'none',
   },
-  addComment: {
+  addRow: {
     display: 'flex',
-    gap: '16px',
-    marginBottom: '32px',
+    gap: 14,
+    marginBottom: 32,
   },
-  commentAvatar: {
-    width: '40px',
-    height: '40px',
+  avatar: {
+    width: 40, height: 40,
     borderRadius: '50%',
-    backgroundColor: '#3ea6ff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '16px',
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: 800,
     flexShrink: 0,
+    color: '#fff',
   },
-  commentInputContainer: {
+  addRight: {
     flex: 1,
   },
-  commentInput: {
+  input: {
     width: '100%',
-    padding: '8px 0',
-    backgroundColor: 'transparent',
+    background: 'transparent',
     border: 'none',
-    borderBottom: '2px solid #303030',
-    color: 'white',
-    fontSize: '14px',
+    borderBottom: '1.5px solid #2a2a2a',
+    color: '#fff',
+    fontSize: 14,
+    padding: '8px 0',
     outline: 'none',
-    marginBottom: '8px',
+    transition: 'border-color 0.2s',
   },
-  commentActions: {
+  addActions: {
     display: 'flex',
     justifyContent: 'flex-end',
-    gap: '12px',
+    gap: 10,
+    marginTop: 10,
   },
-  cancelButton: {
-    padding: '8px 16px',
-    backgroundColor: 'transparent',
+  cancelBtn: {
+    padding: '8px 18px',
+    background: 'transparent',
+    border: 'none',
     color: '#aaa',
-    border: 'none',
-    borderRadius: '20px',
-    fontSize: '13px',
+    fontSize: 13,
+    fontWeight: 700,
     cursor: 'pointer',
+    borderRadius: 22,
+    transition: 'all 0.15s',
   },
-  submitButton: {
-    padding: '8px 16px',
-    backgroundColor: '#ff0000',
-    color: 'white',
+  submitBtn: {
+    padding: '8px 20px',
+    background: '#3ea6ff',
     border: 'none',
-    borderRadius: '20px',
-    fontSize: '13px',
-    fontWeight: '500',
+    borderRadius: 22,
+    color: '#000',
+    fontSize: 13,
+    fontWeight: 800,
     cursor: 'pointer',
+    transition: 'background 0.15s',
   },
-  commentsList: {
+  list: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px',
+    gap: 24,
   },
   comment: {
     display: 'flex',
-    gap: '16px',
+    gap: 14,
   },
-  commentContent: {
+  commentBody: {
     flex: 1,
   },
-  commentHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    marginBottom: '4px',
+  commentMeta: {
+    marginBottom: 6,
   },
-  commentAuthor: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: 'white',
+  authorName: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#fff',
   },
   commentTime: {
-    fontSize: '11px',
-    color: '#666',
+    fontSize: 12,
+    color: '#555',
+    fontWeight: 400,
   },
   commentText: {
-    fontSize: '13px',
-    color: '#ddd',
-    marginBottom: '8px',
-    lineHeight: '1.5',
+    fontSize: 14,
+    color: '#e0e0e0',
+    lineHeight: 1.7,
+    marginBottom: 10,
   },
-  commentFooter: {
+  commentActions: {
+    display: 'flex',
+    gap: 4,
+    alignItems: 'center',
+  },
+  actBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-  },
-  commentAction: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    backgroundColor: 'transparent',
+    gap: 6,
+    background: 'none',
     border: 'none',
     color: '#aaa',
-    fontSize: '12px',
+    fontSize: 13,
     cursor: 'pointer',
-    padding: '4px 8px',
-    borderRadius: '20px',
+    padding: '5px 10px',
+    borderRadius: 22,
+    transition: 'all 0.15s',
   },
-  actionIcon: {
-    fontSize: '14px',
-  },
-  replyButton: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    color: '#aaa',
-    fontSize: '12px',
-    cursor: 'pointer',
-    padding: '4px 8px',
+  replyBox: {
+    marginTop: 8,
   },
 }
 
-// Add hover styles
-const style = document.createElement('style')
-style.textContent = `
-  .comment-input:focus {
-    border-bottom-color: #3ea6ff !important;
-  }
-  .cancel-button:hover {
-    background-color: #272727 !important;
-    color: white !important;
-  }
-  .submit-button:hover:not(:disabled) {
-    background-color: #cc0000 !important;
-  }
-  .comment-action:hover {
-    background-color: #272727 !important;
-    color: white !important;
-  }
-  .reply-button:hover {
-    color: white !important;
-  }
-`
-document.head.appendChild(style)
+function SortIcon()     { return <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg> }
+function ThumbIcon()    { return <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> }
+function ThumbDownIcon(){ return <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg> }

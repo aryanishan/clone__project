@@ -1,16 +1,22 @@
+/* Page.module.css */
+
+/* ── Reset & Base ─────────────────────────────────────────────────────────── */
 .container {
   padding: 1.5rem;
   width: 100%;
-  max-width: 2000px;
-  margin: 0;
+  max-width: 1700px;
+  margin: 0 auto;
   color: inherit;
 }
+
+/* ── Grid ─────────────────────────────────────────────────────────────────── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem 1rem;
-  row-gap: 2.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 1.75rem 1rem;
 }
+
+/* ── Card (shared by VideoCard) ───────────────────────────────────────────── */
 .card {
   display: flex;
   flex-direction: column;
@@ -18,80 +24,138 @@
   text-decoration: none;
   background: transparent;
   cursor: pointer;
+  border: none;
+  padding: 0;
+  width: 100%;
+  text-align: left;
 }
-.card:hover {
-  transform: none;
-  box-shadow: none;
-}
+
+/* ── Thumbnail ────────────────────────────────────────────────────────────── */
 .thumb {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: #222;
+  background: #181818;
   overflow: hidden;
   border-radius: 12px;
   position: relative;
   margin-bottom: 0.75rem;
-  transition: border-radius 0.2s;
+  transition: border-radius 0.2s ease;
 }
+
 .thumbImg {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.32s ease;
 }
+
 .card:hover .thumbImg {
-  transform: scale(1.05);
+  transform: scale(1.06);
 }
+
 .card:hover .thumb {
   border-radius: 0;
 }
+
+/* ── Player (Watch page) ──────────────────────────────────────────────────── */
 .player {
   width: 100%;
   display: block;
   aspect-ratio: 16 / 9;
-  object-fit: cover;
   background: #000;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7);
 }
-.playIcon {
-  font-size: 3rem;
-  opacity: 0.9;
+
+/* ── Duration badge ───────────────────────────────────────────────────────── */
+.duration {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  bottom: 8px;
+  right: 8px;
+  padding: 2px 7px;
+  background: rgba(0, 0, 0, 0.87);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  pointer-events: none;
 }
+
+/* ── Meta text ────────────────────────────────────────────────────────────── */
 .meta {
   padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.6rem;
 }
+
 .vtitle {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  margin: 0;
+  margin: 0 0 4px;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-primary);
 }
+
 .channel,
 .stats {
   margin: 0;
-  font-size: 0.9rem;
-  color: #aaa;
-  line-height: 1.3;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
 }
+
 .channel:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
+
+/* ── No results ───────────────────────────────────────────────────────────── */
 .noResults {
   text-align: center;
-  color: #888;
-  margin-top: 2rem;
+  color: var(--text-secondary);
+  margin-top: 3rem;
+  font-size: 15px;
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #222;
+  border-top-color: var(--accent-red);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 0 auto;
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.7;  }
+}
+
+.skeleton {
+  background: #181818;
+  border-radius: 8px;
+  animation: pulse 1.6s ease infinite;
+}
+
+/* ── Fade-in animation ────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.fadeIn {
+  animation: fadeIn 0.28s ease both;
 }

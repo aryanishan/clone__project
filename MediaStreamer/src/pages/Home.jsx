@@ -1,296 +1,234 @@
 // pages/Home.jsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchTrending, searchVideos } from '../lib/api'
 import VideoCard from '../components/VideoCard'
+import CategoryFilters from '../components/CategoryFilters'
+import { useSearchHistory } from '../context/SearchHistoryContext'
+
+const CATEGORIES = [
+  'All','Music','Gaming','News','Sports',
+  'Technology','Movies','Learning','Live','Comedy','Fashion','Cooking',
+]
 
 export default function Home() {
   const [searchParams] = useSearchParams()
-  const query = searchParams.get('search')
-  
+  const query = searchParams.get('search') || ''
+
+  const [selectedCategory, setSelectedCategory] = useState('All')
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [nextPageToken, setNextPageToken] = useState(null)
   const [error, setError] = useState(null)
-  const [hasMore, setHasMore] = useState(true)
-  const [page, setPage] = useState(1)
-  const [nextPageToken, setNextPageToken] = useState('')
 
-  // Load videos
+  const loaderRef = useRef(null)
+  const { addToSearchHistory } = useSearchHistory()
+
+  // ── Initial load ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    let mounted = true
-    
-    const loadVideos = async () => {
-      setLoading(true)
-      setError(null)
-      
+    let alive = true
+    setLoading(true)
+    setError(null)
+    setVideos([])
+    setNextPageToken(null)
+
+    const load = async () => {
       try {
-        let results
-        let token = ''
-        
-        if (query) {
-          const data = await searchVideos(query, 12)
-          results = data.videos || data
-          token = data.nextPageToken || ''
-        } else {
-          const data = await fetchTrending(12)
-          results = data.videos || data
-          token = data.nextPageToken || ''
-        }
-        
-        if (mounted) {
-          // Ensure results is always an array
-          const videoArray = Array.isArray(results) ? results : []
-          setVideos(videoArray)
-          setNextPageToken(token)
-          setHasMore(!!token || videoArray.length === 12)
+        if (query) addToSearchHistory(query)
+        const data = query
+          ? await searchVideos(query, 12)
+          : await fetchTrending(12)
+        if (alive) {
+          setVideos(data.videos)
+          setNextPageToken(data.nextPageToken)
         }
       } catch (err) {
-        console.error('Failed to load videos:', err)
-        if (mounted) {
-          setError('Failed to load videos. Please try again.')
-        }
+        console.error(err)
+        if (alive) setError('Failed to load videos. Please try again.')
       } finally {
-        if (mounted) setLoading(false)
+        if (alive) setLoading(false)
       }
     }
 
-    loadVideos()
-    
-    return () => {
-      mounted = false
-    }
-  }, [query])
+    load()
+    return () => { alive = false }
+  }, [query, addToSearchHistory])
 
-  const handleRetry = () => {
-    setError(null)
-    setLoading(true)
-    // Trigger re-fetch by forcing a re-render
-    setPage(prev => prev + 1)
-  }
-
-  const loadMore = async () => {
-    if (loadingMore || !hasMore || !nextPageToken) return
-    
+  // ── Infinite scroll ───────────────────────────────────────────────────────────
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !nextPageToken) return
     setLoadingMore(true)
     try {
-      let moreResults
-      let token = ''
-      
-      if (query) {
-        const data = await searchVideos(query, 12, nextPageToken)
-        moreResults = data.videos || data
-        token = data.nextPageToken || ''
-      } else {
-        const data = await fetchTrending(12, nextPageToken)
-        moreResults = data.videos || data
-        token = data.nextPageToken || ''
-      }
-      
-      const moreArray = Array.isArray(moreResults) ? moreResults : []
-      
-      if (moreArray.length > 0) {
-        setVideos(prev => [...prev, ...moreArray])
-        setNextPageToken(token)
-        setHasMore(!!token)
-        setPage(prev => prev + 1)
-      } else {
-        setHasMore(false)
-      }
+      const data = query
+        ? await searchVideos(query, 12, nextPageToken)
+        : await fetchTrending(12, nextPageToken)
+      setVideos(prev => [...prev, ...data.videos])
+      setNextPageToken(data.nextPageToken)
     } catch (err) {
-      console.error('Failed to load more videos:', err)
-      setHasMore(false)
+      console.error(err)
     } finally {
       setLoadingMore(false)
     }
+  }, [loadingMore, nextPageToken, query])
+
+  useEffect(() => {
+    if (loading || !loaderRef.current) return
+    const obs = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting && nextPageToken) loadMore() },
+      { threshold: 0.1, rootMargin: '300px' }
+    )
+    obs.observe(loaderRef.current)
+    return () => obs.disconnect()
+  }, [loading, nextPageToken, loadMore])
+
+  // ── Error ──────────────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div style={S.center}>
+        <span style={{ fontSize: 52, display: 'block', marginBottom: 16 }}>😕</span>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Something went wrong</h2>
+        <p style={{ color: '#aaa', marginBottom: 24 }}>{error}</p>
+        <button onClick={() => window.location.reload()} style={S.retryBtn}>
+          Try Again
+        </button>
+      </div>
+    )
   }
 
   return (
-    <div style={styles.container}>
-      {/* Search header */}
-      {query && !loading && (
-        <p style={styles.searchHeader}>
-          Search results for "{query}"
-        </p>
-      )}
+    <>
+      <style>{css}</style>
+      <div style={S.page}>
 
-      {/* Error message with retry button */}
-      {error && (
-        <div style={styles.errorContainer}>
-          <span style={styles.errorIcon}>😕</span>
-          <p style={styles.errorText}>{error}</p>
-          <button onClick={handleRetry} style={styles.retryButton}>
-            Retry
-          </button>
-        </div>
-      )}
+        {/* Category chips */}
+        <CategoryFilters
+          categories={CATEGORIES}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
 
-      {/* Video grid */}
-      {!error && (
-        <>
-          <div style={styles.grid}>
-            {videos.map((video) => (
-              <VideoCard key={video.id} video={video} />
-            ))}
+        {/* Search heading */}
+        {query && !loading && (
+          <p style={S.searchHeading}>
+            Results for <strong style={{ color: '#fff' }}>"{query}"</strong>
+            <span style={{ color: '#555' }}> — {videos.length}{nextPageToken ? '+' : ''} videos</span>
+          </p>
+        )}
+
+        {/* Grid */}
+        {loading ? (
+          <div style={S.grid}>
+            {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
+        ) : videos.length === 0 ? (
+          <div style={S.center}>
+            <span style={{ fontSize: 64, display: 'block', marginBottom: 16 }}>🔍</span>
+            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>No videos found</h3>
+            <p style={{ color: '#717171' }}>Try different search terms</p>
+          </div>
+        ) : (
+          <div className="home-fade" style={S.grid}>
+            {videos.map(v => <VideoCard key={v.id} video={v} />)}
+          </div>
+        )}
 
-          {/* Loading states */}
-          {loading && (
-            <div style={styles.loadingContainer}>
-              <div style={styles.loadingSpinner}></div>
-              <p style={styles.loadingText}>Loading videos...</p>
-            </div>
+        {/* Infinite scroll sentinel */}
+        <div ref={loaderRef} style={S.sentinel}>
+          {loadingMore && <Spinner />}
+          {!loading && !nextPageToken && videos.length > 0 && (
+            <p style={S.endMsg}>— No more videos —</p>
           )}
+        </div>
 
-          {/* Load More Button */}
-          {!loading && hasMore && videos.length > 0 && (
-            <div style={styles.loadMoreContainer}>
-              <button 
-                onClick={loadMore}
-                disabled={loadingMore}
-                style={{
-                  ...styles.loadMoreButton,
-                  opacity: loadingMore ? 0.7 : 1,
-                  cursor: loadingMore ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {loadingMore ? 'Loading...' : 'Load More Videos'}
-              </button>
-            </div>
-          )}
+      </div>
+    </>
+  )
+}
 
-          {/* No results */}
-          {!loading && videos.length === 0 && !error && (
-            <div style={styles.noResults}>
-              <span style={styles.noResultsIcon}>🔍</span>
-              <p style={styles.noResultsText}>No videos found</p>
-              {query && (
-                <p style={styles.noResultsSubtext}>
-                  Try different keywords or check back later
-                </p>
-              )}
-            </div>
-          )}
-        </>
-      )}
+// ── Sub-components ─────────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <div style={{
+      width: 28, height: 28,
+      border: '3px solid #222',
+      borderTop: '3px solid #ff0000',
+      borderRadius: '50%',
+      animation: 'spin 0.7s linear infinite',
+    }} />
+  )
+}
+
+function SkeletonCard() {
+  return (
+    <div>
+      <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: 12, background: '#181818', animation: 'pulse 1.6s ease infinite', marginBottom: 12 }} />
+      <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#181818', animation: 'pulse 1.6s ease infinite', flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ height: 13, background: '#181818', borderRadius: 6, marginBottom: 8, animation: 'pulse 1.6s ease infinite' }} />
+          <div style={{ height: 11, width: '65%', background: '#181818', borderRadius: 6, animation: 'pulse 1.6s ease infinite' }} />
+        </div>
+      </div>
     </div>
   )
 }
 
-const styles = {
-  container: {
-    padding: '20px',
-    maxWidth: '1600px',
+// ── CSS ────────────────────────────────────────────────────────────────────────
+const css = `
+  @keyframes spin  { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:.7} }
+  @keyframes fadeIn{ from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+  .home-fade { animation: fadeIn 0.28s ease both; }
+  .retry-btn:hover { background: #cc0000 !important; }
+`
+
+// ── Styles ─────────────────────────────────────────────────────────────────────
+const S = {
+  page: {
+    maxWidth: 1700,
     margin: '0 auto',
   },
-  searchHeader: {
-    marginBottom: '20px',
+  searchHeading: {
     color: '#aaa',
-    fontSize: '14px',
+    fontSize: 15,
+    marginBottom: 20,
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '24px 16px',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))',
+    gap: '28px 16px',
   },
-  errorContainer: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    backgroundColor: '#1a1a1a',
-    borderRadius: '12px',
-    margin: '20px 0',
+  sentinel: {
+    height: 70,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
   },
-  errorIcon: {
-    fontSize: '48px',
-    display: 'block',
-    marginBottom: '16px',
+  endMsg: {
+    color: '#2a2a2a',
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
-  errorText: {
-    fontSize: '16px',
-    color: '#ff4444',
-    marginBottom: '20px',
-  },
-  retryButton: {
-    padding: '12px 32px',
-    backgroundColor: '#ff0000',
-    color: 'white',
-    border: 'none',
-    borderRadius: '25px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  loadingContainer: {
+  center: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '60px 20px',
-  },
-  loadingSpinner: {
-    width: '40px',
-    height: '40px',
-    border: '3px solid #303030',
-    borderTopColor: '#ff0000',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-    marginBottom: '16px',
-  },
-  loadingText: {
-    color: '#aaa',
-    fontSize: '14px',
-  },
-  loadMoreContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '30px 20px',
-  },
-  loadMoreButton: {
-    padding: '12px 40px',
-    backgroundColor: '#272727',
-    color: 'white',
-    border: 'none',
-    borderRadius: '25px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  noResults: {
+    minHeight: 400,
     textAlign: 'center',
-    padding: '60px 20px',
+    padding: 20,
   },
-  noResultsIcon: {
-    fontSize: '48px',
-    display: 'block',
-    marginBottom: '16px',
-    opacity: 0.5,
-  },
-  noResultsText: {
-    fontSize: '18px',
-    color: 'white',
-    marginBottom: '8px',
-  },
-  noResultsSubtext: {
-    fontSize: '14px',
-    color: '#666',
+  retryBtn: {
+    padding: '10px 26px',
+    background: '#ff0000',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 22,
+    fontSize: 14,
+    fontWeight: 700,
+    cursor: 'pointer',
+    transition: 'background 0.2s',
   },
 }
-
-// Add global styles
-const style = document.createElement('style')
-style.textContent = `
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  .retry-button:hover {
-    background-color: #cc0000 !important;
-  }
-  
-  .load-more-button:hover {
-    background-color: #3f3f3f !important;
-  }
-`
-document.head.appendChild(style)

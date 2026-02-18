@@ -1,365 +1,309 @@
 // components/NotificationDropdown.jsx
 import React, { useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useNotifications } from '../context/NotificationContext'
 
 export default function NotificationDropdown({ onClose }) {
-  const dropdownRef = useRef(null)
-  const { 
-    notifications, 
-    unreadCount, 
-    markAsRead, 
-    markAllAsRead, 
-    clearAll,
-    removeNotification 
-  } = useNotifications()
+  const ref = useRef(null)
+  const navigate = useNavigate()
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, removeNotification } = useNotifications()
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        onClose()
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    const fn = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose() }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
   }, [onClose])
 
-  const handleNotificationClick = (notification) => {
-    if (!notification.read) {
-      markAsRead(notification.id)
-    }
-    if (notification.videoId) {
-      // Navigate to video
-      window.location.href = `/watch/${notification.videoId}`
-    }
+  const handleClick = (n) => {
+    if (!n.read) markAsRead(n.id)
+    if (n.videoId) navigate(`/watch/${n.videoId}`)
     onClose()
   }
 
-  const getNotificationIcon = (type) => {
-    switch(type) {
+  const typeIcon = (type) => {
+    switch (type) {
+      case 'upload':       return '📹'
       case 'subscription': return '📺'
-      case 'like': return '👍'
-      case 'comment': return '💬'
-      case 'upload': return '📹'
-      default: return '🔔'
+      case 'like':         return '👍'
+      case 'comment':      return '💬'
+      default:             return '🔔'
     }
   }
 
   return (
-    <div ref={dropdownRef} style={styles.dropdown}>
-      {/* Header */}
-      <div style={styles.header}>
-        <h3 style={styles.title}>Notifications</h3>
-        <div style={styles.headerActions}>
-          {unreadCount > 0 && (
-            <button onClick={markAllAsRead} style={styles.headerButton} title="Mark all as read">
-              ✓ All
-            </button>
-          )}
-          {notifications.length > 0 && (
-            <button onClick={clearAll} style={styles.headerButton} title="Clear all">
-              ✕ All
-            </button>
-          )}
-          <button onClick={onClose} style={styles.closeButton}>✕</button>
-        </div>
-      </div>
+    <>
+      <style>{css}</style>
+      <div ref={ref} style={S.panel}>
 
-      {/* Notification List */}
-      <div style={styles.notificationList}>
-        {notifications.length === 0 ? (
-          <div style={styles.emptyState}>
-            <span style={styles.emptyIcon}>🔔</span>
-            <p style={styles.emptyText}>No notifications</p>
-            <p style={styles.emptySubtext}>You're all caught up!</p>
-          </div>
-        ) : (
-          notifications.map(notification => (
-            <div
-              key={notification.id}
-              style={{
-                ...styles.notificationItem,
-                backgroundColor: notification.read ? 'transparent' : '#272727'
-              }}
-              onClick={() => handleNotificationClick(notification)}
-            >
-              {/* Icon/Avatar */}
-              <div style={styles.notificationIcon}>
-                {notification.channelAvatar ? (
-                  <div style={styles.channelAvatar}>
-                    {notification.channelAvatar}
-                  </div>
-                ) : (
-                  <span style={styles.iconEmoji}>
-                    {getNotificationIcon(notification.type)}
-                  </span>
-                )}
-              </div>
-
-              {/* Content */}
-              <div style={styles.notificationContent}>
-                <div style={styles.notificationMessage}>
-                  <strong>{notification.channel}</strong> {notification.message}
-                </div>
-                {notification.action && (
-                  <div style={styles.notificationAction}>
-                    {notification.action}
-                  </div>
-                )}
-                <div style={styles.notificationTime}>
-                  {notification.time}
-                </div>
-              </div>
-
-              {/* Thumbnail if exists */}
-              {notification.videoThumb && (
-                <div style={styles.notificationThumb}>
-                  <img 
-                    src={notification.videoThumb} 
-                    alt=""
-                    style={styles.thumbImg}
-                  />
-                </div>
-              )}
-
-              {/* Remove button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  removeNotification(notification.id)
-                }}
-                style={styles.removeButton}
-                title="Remove"
-              >
-                ✕
+        {/* Header */}
+        <div style={S.header}>
+          <h3 style={S.title}>Notifications</h3>
+          <div style={S.headerActions}>
+            {unreadCount > 0 && (
+              <button className="nd-hbtn" style={S.hBtn} onClick={markAllAsRead}>
+                ✓ Mark all read
               </button>
+            )}
+            {notifications.length > 0 && (
+              <button className="nd-hbtn nd-clear" style={{ ...S.hBtn, color: '#ff6b6b' }} onClick={clearAll}>
+                Clear all
+              </button>
+            )}
+            <button className="nd-close" style={S.closeBtn} onClick={onClose}>✕</button>
+          </div>
+        </div>
 
-              {/* Unread dot */}
-              {!notification.read && <div style={styles.unreadDot} />}
+        {/* List */}
+        <div style={S.list}>
+          {notifications.length === 0 ? (
+            <div style={S.empty}>
+              <span style={S.emptyIcon}>🔔</span>
+              <p style={S.emptyTitle}>No notifications</p>
+              <p style={S.emptySubtitle}>You're all caught up!</p>
             </div>
-          ))
+          ) : (
+            notifications.map(n => (
+              <div
+                key={n.id}
+                className="nd-item"
+                style={{ ...S.item, background: n.read ? 'transparent' : '#1a2535' }}
+                onClick={() => handleClick(n)}
+              >
+                {/* Avatar / icon */}
+                <div style={S.iconCol}>
+                  {n.channelAvatar ? (
+                    <div style={{ ...S.avatarCircle, background: avatarColor(n.channelAvatar) }}>
+                      {n.channelAvatar}
+                    </div>
+                  ) : (
+                    <span style={S.typeIcon}>{typeIcon(n.type)}</span>
+                  )}
+                </div>
+
+                {/* Text */}
+                <div style={S.textCol}>
+                  <p style={S.message}>
+                    <strong>{n.channel}</strong> {n.message}
+                  </p>
+                  {n.action && <p style={S.action}>{n.action}</p>}
+                  <p style={S.time}>{n.time}</p>
+                </div>
+
+                {/* Thumb */}
+                {n.videoThumb && (
+                  <img src={n.videoThumb} alt="" style={S.thumb}
+                    onError={e => { e.target.style.display = 'none' }} />
+                )}
+
+                {/* Unread dot */}
+                {!n.read && <div style={S.dot} />}
+
+                {/* Remove */}
+                <button
+                  className="nd-remove"
+                  style={S.removeBtn}
+                  onClick={e => { e.stopPropagation(); removeNotification(n.id) }}
+                  title="Remove"
+                >
+                  ✕
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        {notifications.length > 0 && (
+          <div style={S.footer}>
+            <button style={S.viewAll} onClick={onClose}>View all notifications</button>
+          </div>
         )}
       </div>
-
-      {/* Footer */}
-      {notifications.length > 0 && (
-        <div style={styles.footer}>
-          <Link to="/notifications" style={styles.viewAllLink} onClick={onClose}>
-            View all notifications
-          </Link>
-        </div>
-      )}
-    </div>
+    </>
   )
 }
 
-const styles = {
-  dropdown: {
+const COLORS = ['#3ea6ff', '#ff6b6b', '#51cf66', '#ffd43b', '#cc5de8', '#ff9f43']
+const avatarColor = (t) => COLORS[(t || '?').charCodeAt(0) % COLORS.length]
+
+const css = `
+  .nd-item:hover  { background: #252525 !important; }
+  .nd-item:hover .nd-remove { display: flex !important; }
+  .nd-remove:hover { background: #ff4444 !important; color: #fff !important; }
+  .nd-hbtn:hover  { background: #3a3a3a !important; }
+  .nd-close:hover { background: #3a3a3a !important; color: #fff !important; }
+`
+
+const S = {
+  panel: {
     position: 'absolute',
-    top: '45px',
-    right: '0',
-    width: '380px',
-    maxHeight: '480px',
-    backgroundColor: '#282828',
-    borderRadius: '12px',
-    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-    border: '1px solid #3f3f3f',
-    zIndex: 1100,
+    top: 48, right: 0,
+    width: 390,
+    maxHeight: 500,
+    background: '#181818',
+    border: '1px solid #2a2a2a',
+    borderRadius: 16,
+    boxShadow: '0 12px 48px rgba(0,0,0,0.8)',
+    zIndex: 3000,
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden',
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '16px',
-    borderBottom: '1px solid #3f3f3f',
+    padding: '14px 18px',
+    borderBottom: '1px solid #242424',
+    flexShrink: 0,
   },
   title: {
-    fontSize: '16px',
-    fontWeight: '600',
-    margin: 0,
-    color: 'white',
+    fontSize: 16,
+    fontWeight: 800,
+    color: '#fff',
   },
   headerActions: {
     display: 'flex',
-    gap: '8px',
     alignItems: 'center',
+    gap: 6,
   },
-  headerButton: {
-    padding: '4px 8px',
-    backgroundColor: '#3f3f3f',
-    color: 'white',
+  hBtn: {
+    padding: '4px 10px',
+    background: '#2a2a2a',
     border: 'none',
-    borderRadius: '4px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  closeButton: {
-    width: '24px',
-    height: '24px',
-    backgroundColor: 'transparent',
+    borderRadius: 6,
     color: '#aaa',
+    fontSize: 12,
+    cursor: 'pointer',
+    fontWeight: 600,
+    transition: 'background 0.15s',
+  },
+  closeBtn: {
+    width: 28, height: 28,
+    background: '#2a2a2a',
     border: 'none',
     borderRadius: '50%',
-    fontSize: '14px',
+    color: '#aaa',
+    fontSize: 13,
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.2s',
+    transition: 'all 0.15s',
   },
-  notificationList: {
-    flex: 1,
+  list: {
     overflowY: 'auto',
-    maxHeight: '380px',
+    flex: 1,
   },
-  notificationItem: {
+  item: {
     display: 'flex',
-    gap: '12px',
-    padding: '12px 16px',
+    gap: 12,
+    padding: '13px 18px',
     cursor: 'pointer',
-    borderBottom: '1px solid #3f3f3f',
+    borderBottom: '1px solid #1e1e1e',
     position: 'relative',
-    transition: 'background-color 0.2s',
+    transition: 'background 0.15s',
+    alignItems: 'flex-start',
   },
-  notificationIcon: {
+  iconCol: {
     flexShrink: 0,
-    width: '40px',
-    height: '40px',
+    width: 44, height: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  channelAvatar: {
-    width: '40px',
-    height: '40px',
+  avatarCircle: {
+    width: 44, height: 44,
     borderRadius: '50%',
-    backgroundColor: '#3ea6ff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '18px',
-    fontWeight: '600',
-    color: 'white',
+    fontSize: 17,
+    fontWeight: 800,
+    color: '#fff',
   },
-  iconEmoji: {
-    fontSize: '24px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '40px',
-    height: '40px',
+  typeIcon: {
+    fontSize: 26,
   },
-  notificationContent: {
+  textCol: {
     flex: 1,
     minWidth: 0,
   },
-  notificationMessage: {
-    fontSize: '13px',
-    color: 'white',
-    marginBottom: '4px',
-    lineHeight: '1.4',
+  message: {
+    fontSize: 13,
+    color: '#e0e0e0',
+    lineHeight: 1.5,
+    marginBottom: 4,
   },
-  notificationAction: {
-    fontSize: '12px',
-    color: '#aaa',
-    marginBottom: '4px',
+  action: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 4,
   },
-  notificationTime: {
-    fontSize: '11px',
-    color: '#666',
+  time: {
+    fontSize: 11,
+    color: '#555',
   },
-  notificationThumb: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '4px',
-    overflow: 'hidden',
+  thumb: {
+    width: 60,
+    aspectRatio: '16/9',
+    borderRadius: 6,
+    objectFit: 'cover',
     flexShrink: 0,
   },
-  thumbImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  removeButton: {
+  dot: {
     position: 'absolute',
-    top: '8px',
-    right: '8px',
-    width: '20px',
-    height: '20px',
-    backgroundColor: '#3f3f3f',
-    color: '#aaa',
+    top: 16, right: 16,
+    width: 8, height: 8,
+    borderRadius: '50%',
+    background: '#3ea6ff',
+  },
+  removeBtn: {
+    display: 'none',
+    position: 'absolute',
+    top: 8, right: 8,
+    width: 22, height: 22,
+    background: '#3a3a3a',
     border: 'none',
     borderRadius: '50%',
-    fontSize: '10px',
+    color: '#aaa',
+    fontSize: 11,
     cursor: 'pointer',
-    display: 'none',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.2s',
+    transition: 'all 0.15s',
   },
-  unreadDot: {
-    position: 'absolute',
-    top: '16px',
-    right: '16px',
-    width: '8px',
-    height: '8px',
-    borderRadius: '50%',
-    backgroundColor: '#3ea6ff',
-  },
-  emptyState: {
+  empty: {
     textAlign: 'center',
-    padding: '40px 20px',
+    padding: '44px 20px',
   },
   emptyIcon: {
-    fontSize: '40px',
+    fontSize: 44,
     display: 'block',
-    marginBottom: '12px',
+    marginBottom: 14,
   },
-  emptyText: {
-    fontSize: '14px',
-    color: 'white',
-    marginBottom: '4px',
+  emptyTitle: {
+    fontSize: 15,
+    color: '#fff',
+    marginBottom: 6,
+    fontWeight: 600,
   },
-  emptySubtext: {
-    fontSize: '12px',
-    color: '#666',
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#555',
   },
   footer: {
-    padding: '12px 16px',
-    borderTop: '1px solid #3f3f3f',
+    padding: '12px 18px',
+    borderTop: '1px solid #242424',
     textAlign: 'center',
+    flexShrink: 0,
   },
-  viewAllLink: {
+  viewAll: {
+    background: 'none',
+    border: 'none',
     color: '#3ea6ff',
-    textDecoration: 'none',
-    fontSize: '13px',
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: 'pointer',
   },
 }
-
-// Add hover styles
-const style = document.createElement('style')
-style.textContent = `
-  .notification-item:hover {
-    background-color: #3f3f3f !important;
-  }
-  .notification-item:hover .remove-button {
-    display: flex !important;
-  }
-  .remove-button:hover {
-    background-color: #ff4444 !important;
-    color: white !important;
-  }
-  .header-button:hover {
-    background-color: #4f4f4f !important;
-  }
-  .close-button:hover {
-    background-color: #3f3f3f !important;
-    color: white !important;
-  }
-  .view-all-link:hover {
-    text-decoration: underline !important;
-  }
-`
-document.head.appendChild(style)

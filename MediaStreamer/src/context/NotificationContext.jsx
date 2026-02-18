@@ -1,133 +1,98 @@
 // context/NotificationContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useCallback, useState } from 'react'
 
 const NotificationContext = createContext()
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext)
-  if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider')
-  }
+  if (!context) throw new Error('useNotifications must be used within NotificationProvider')
   return context
 }
 
-export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [showDropdown, setShowDropdown] = useState(false)
+const DEFAULT_NOTIFICATIONS = [
+  {
+    id: 1,
+    type: 'upload',
+    channel: 'Rick Astley',
+    channelAvatar: 'RA',
+    message: 'uploaded a new video: Never Gonna Give You Up – Remastered 4K',
+    time: '2 hours ago',
+    read: false,
+    videoId: 'dQw4w9WgXcQ',
+    videoThumb: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+  },
+  {
+    id: 2,
+    type: 'subscription',
+    channel: 'Ed Sheeran',
+    channelAvatar: 'ES',
+    message: 'is live now — Acoustic Evening 🎸',
+    time: '5 hours ago',
+    read: false,
+    videoId: 'JGwWNGJdvx8',
+    videoThumb: 'https://img.youtube.com/vi/JGwWNGJdvx8/mqdefault.jpg',
+  },
+  {
+    id: 3,
+    type: 'upload',
+    channel: 'Mark Ronson',
+    channelAvatar: 'MR',
+    message: 'posted: Behind the scenes of Uptown Funk 🎥',
+    time: '1 day ago',
+    read: true,
+    videoId: 'OPf0YbXqDm0',
+    videoThumb: 'https://img.youtube.com/vi/OPf0YbXqDm0/mqdefault.jpg',
+  },
+]
 
-  // Load notifications from localStorage
-  useEffect(() => {
-    const savedNotifications = localStorage.getItem('notifications')
-    if (savedNotifications) {
-      const parsed = JSON.parse(savedNotifications)
-      setNotifications(parsed)
-      setUnreadCount(parsed.filter(n => !n.read).length)
-    } else {
-      // Add some sample notifications
-      const sampleNotifications = [
-        {
-          id: '1',
-          type: 'subscription',
-          message: 'New video from Star Wars',
-          channel: 'Star Wars',
-          channelAvatar: 'S',
-          time: '2 hours ago',
-          read: false,
-          videoId: '123',
-          videoThumb: 'https://via.placeholder.com/40',
-          action: 'uploaded: "The Mandalorian Trailer"'
-        },
-        {
-          id: '2',
-          type: 'like',
-          message: 'Your video got 1.2K likes',
-          channel: 'System',
-          time: '1 day ago',
-          read: false
-        },
-        {
-          id: '3',
-          type: 'comment',
-          message: 'John commented: "Great video!"',
-          channel: 'John Doe',
-          time: '2 days ago',
-          read: true
-        }
-      ]
-      setNotifications(sampleNotifications)
-      setUnreadCount(2)
-      localStorage.setItem('notifications', JSON.stringify(sampleNotifications))
+export const NotificationProvider = ({ children }) => {
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('notifications')
+      return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATIONS
+    } catch {
+      return DEFAULT_NOTIFICATIONS
     }
+  })
+
+  const persist = (list) => {
+    localStorage.setItem('notifications', JSON.stringify(list))
+    return list
+  }
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const addNotification = useCallback((notification) => {
+    setNotifications(prev =>
+      persist([{ id: Date.now(), ...notification, time: 'Just now', read: false }, ...prev].slice(0, 20))
+    )
   }, [])
 
-  // Add new notification
-  const addNotification = (notification) => {
-    const newNotification = {
-      id: Date.now().toString(),
-      time: 'Just now',
-      read: false,
-      ...notification
-    }
-    
-    setNotifications(prev => {
-      const updated = [newNotification, ...prev].slice(0, 20) // Keep last 20
-      localStorage.setItem('notifications', JSON.stringify(updated))
-      setUnreadCount(updated.filter(n => !n.read).length)
-      return updated
-    })
-  }
+  const markAsRead = useCallback((id) => {
+    setNotifications(prev => persist(prev.map(n => n.id === id ? { ...n, read: true } : n)))
+  }, [])
 
-  // Mark notification as read
-  const markAsRead = (notificationId) => {
-    setNotifications(prev => {
-      const updated = prev.map(n => 
-        n.id === notificationId ? { ...n, read: true } : n
-      )
-      localStorage.setItem('notifications', JSON.stringify(updated))
-      setUnreadCount(updated.filter(n => !n.read).length)
-      return updated
-    })
-  }
+  const markAllAsRead = useCallback(() => {
+    setNotifications(prev => persist(prev.map(n => ({ ...n, read: true }))))
+  }, [])
 
-  // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications(prev => {
-      const updated = prev.map(n => ({ ...n, read: true }))
-      localStorage.setItem('notifications', JSON.stringify(updated))
-      setUnreadCount(0)
-      return updated
-    })
-  }
+  const clearAll = useCallback(() => {
+    setNotifications(persist([]))
+  }, [])
 
-  // Clear all notifications
-  const clearAll = () => {
-    setNotifications([])
-    setUnreadCount(0)
-    localStorage.setItem('notifications', JSON.stringify([]))
-  }
-
-  // Remove single notification
-  const removeNotification = (notificationId) => {
-    setNotifications(prev => {
-      const updated = prev.filter(n => n.id !== notificationId)
-      localStorage.setItem('notifications', JSON.stringify(updated))
-      setUnreadCount(updated.filter(n => !n.read).length)
-      return updated
-    })
-  }
+  const removeNotification = useCallback((id) => {
+    setNotifications(prev => persist(prev.filter(n => n.id !== id)))
+  }, [])
 
   return (
     <NotificationContext.Provider value={{
       notifications,
       unreadCount,
-      showDropdown,
-      setShowDropdown,
       addNotification,
       markAsRead,
       markAllAsRead,
       clearAll,
-      removeNotification
+      removeNotification,
     }}>
       {children}
     </NotificationContext.Provider>

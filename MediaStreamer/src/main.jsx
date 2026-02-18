@@ -1,23 +1,15 @@
-// main.jsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import App from './App'
 import './index.css'
-import App from './App.jsx'
 
-// Check if API key is present
-const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY
-console.log('Environment check:', {
-  hasApiKey: !!apiKey,
-  mode: import.meta.env.MODE,
-  dev: import.meta.env.DEV,
-  prod: import.meta.env.PROD
-})
+const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY
 
-if (!apiKey) {
+if (!API_KEY) {
   console.warn(
-    '⚠️ YouTube API key not found. Using fallback videos.\n' +
-    'Please add VITE_YOUTUBE_API_KEY to your .env file'
+    '%c⚠️ YouTube API key not found. Using demo data.',
+    'background: #ff0000; color: white; padding: 4px; border-radius: 4px;'
   )
 }
 

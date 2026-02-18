@@ -1,277 +1,281 @@
 // components/VideoActions.jsx
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
 export default function VideoActions({ video }) {
   const [liked, setLiked] = useState(false)
   const [disliked, setDisliked] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
-  const [showShareMenu, setShowShareMenu] = useState(false)
+  const [showShare, setShowShare] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const shareRef = useRef(null)
 
-  const handleLike = () => {
-    if (disliked) setDisliked(false)
-    setLiked(!liked)
-  }
+  useEffect(() => {
+    const fn = (e) => { if (shareRef.current && !shareRef.current.contains(e.target)) setShowShare(false) }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [])
 
-  const handleDislike = () => {
-    if (liked) setLiked(false)
-    setDisliked(!disliked)
-  }
-
-  const handleSubscribe = () => {
-    setSubscribed(!subscribed)
-  }
+  const handleLike = () => { setLiked(l => !l); if (disliked) setDisliked(false) }
+  const handleDislike = () => { setDisliked(d => !d); if (liked) setLiked(false) }
 
   const handleShare = (platform) => {
     const url = window.location.href
-    const title = video.title
-    
-    switch(platform) {
+    const title = video?.title || ''
+    switch (platform) {
       case 'copy':
-        navigator.clipboard.writeText(url)
-        alert('Link copied to clipboard!')
+        navigator.clipboard.writeText(url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) }).catch(() => {})
         break
       case 'twitter':
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`)
         break
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)
-        break
       case 'whatsapp':
         window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`)
         break
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`)
+        break
+      default: break
     }
-    setShowShareMenu(false)
+    setShowShare(false)
   }
 
-  return (
-    <div style={styles.container}>
-      {/* Channel Info */}
-      <div style={styles.channelInfo}>
-        <div style={styles.channelAvatar}>
-          {video.channel?.charAt(0)}
-        </div>
-        <div style={styles.channelDetails}>
-          <h3 style={styles.channelName}>{video.channel}</h3>
-          <p style={styles.channelStats}>1.2M subscribers</p>
-        </div>
-        <button 
-          onClick={handleSubscribe}
-          style={{
-            ...styles.subscribeButton,
-            backgroundColor: subscribed ? '#3f3f3f' : '#ff0000'
-          }}
-        >
-          {subscribed ? 'Subscribed' : 'Subscribe'}
-        </button>
-      </div>
+  const COLORS = ['#3ea6ff','#ff6b6b','#51cf66','#ffd43b','#cc5de8','#ff9f43']
+  const avatarColor = COLORS[(video?.channel || '?').charCodeAt(0) % COLORS.length]
 
-      {/* Video Stats */}
-      <div style={styles.videoStats}>
-        <div style={styles.statsGroup}>
-          <button 
-            onClick={handleLike}
+  return (
+    <>
+      <style>{css}</style>
+      <div style={S.wrap}>
+
+        {/* Channel row */}
+        <div style={S.channelRow}>
+          <div style={{ ...S.avatar, background: avatarColor }}>
+            {(video?.channel || '?')[0].toUpperCase()}
+          </div>
+          <div>
+            <p style={S.channelName}>{video?.channel || 'Unknown Channel'}</p>
+            <p style={S.subs}>1.24M subscribers</p>
+          </div>
+          <button
+            className="va-sub-btn"
+            onClick={() => setSubscribed(s => !s)}
             style={{
-              ...styles.statButton,
-              color: liked ? '#3ea6ff' : 'white'
+              ...S.subBtn,
+              background:  subscribed ? '#2a2a2a' : '#ff0000',
+              border:      subscribed ? '1.5px solid #3a3a3a' : 'none',
             }}
           >
-            <span style={styles.statIcon}>👍</span>
-            <span>{video.likes || '12K'}</span>
-          </button>
-          <button 
-            onClick={handleDislike}
-            style={{
-              ...styles.statButton,
-              color: disliked ? '#3ea6ff' : 'white'
-            }}
-          >
-            <span style={styles.statIcon}>👎</span>
+            {subscribed ? '✓ Subscribed' : 'Subscribe'}
           </button>
         </div>
-        
-        <div style={styles.shareContainer}>
-          <button 
-            onClick={() => setShowShareMenu(!showShareMenu)}
-            style={styles.shareButton}
-          >
-            <span style={styles.statIcon}>↗️</span>
-            <span>Share</span>
+
+        {/* Actions row */}
+        <div style={S.actionsRow}>
+
+          {/* Like / Dislike */}
+          <div style={S.likeGroup}>
+            <button
+              className="va-action-btn"
+              onClick={handleLike}
+              style={{ ...S.actionBtn, ...S.likeBtnLeft, color: liked ? '#3ea6ff' : '#e0e0e0', background: liked ? '#1a2e42' : 'transparent' }}
+            >
+              <LikeIcon /> <span>{liked ? '12.1K' : '12K'}</span>
+            </button>
+            <div style={S.divider} />
+            <button
+              className="va-action-btn"
+              onClick={handleDislike}
+              style={{ ...S.actionBtn, ...S.dislikeBtnRight, color: disliked ? '#ff6b6b' : '#e0e0e0', background: disliked ? '#2a1515' : 'transparent' }}
+            >
+              <DislikeIcon />
+            </button>
+          </div>
+
+          {/* Share */}
+          <div ref={shareRef} style={{ position: 'relative' }}>
+            <button
+              className="va-action-btn va-share-btn"
+              onClick={() => setShowShare(s => !s)}
+              style={S.shareBtn}
+            >
+              <ShareIcon /> Share
+            </button>
+            {showShare && (
+              <div style={S.shareMenu}>
+                {[
+                  { key: 'copy',      icon: '📋', label: copied ? 'Copied!' : 'Copy link' },
+                  { key: 'twitter',   icon: '𝕏',  label: 'Twitter / X' },
+                  { key: 'whatsapp',  icon: '💬', label: 'WhatsApp' },
+                  { key: 'facebook',  icon: '📘', label: 'Facebook' },
+                ].map(({ key, icon, label }) => (
+                  <button
+                    key={key}
+                    className="va-share-item"
+                    style={S.shareItem}
+                    onClick={() => handleShare(key)}
+                  >
+                    <span>{icon}</span> {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* More */}
+          <button className="va-action-btn" style={S.moreBtn} title="More actions">
+            <MoreIcon />
           </button>
-          
-          {showShareMenu && (
-            <div style={styles.shareMenu}>
-              <button onClick={() => handleShare('copy')} style={styles.shareMenuItem}>
-                📋 Copy link
-              </button>
-              <button onClick={() => handleShare('twitter')} style={styles.shareMenuItem}>
-                🐦 Twitter
-              </button>
-              <button onClick={() => handleShare('facebook')} style={styles.shareMenuItem}>
-                📘 Facebook
-              </button>
-              <button onClick={() => handleShare('whatsapp')} style={styles.shareMenuItem}>
-                💬 WhatsApp
-              </button>
-            </div>
-          )}
+
         </div>
-        
-        <button style={styles.moreButton}>
-          <span style={styles.statIcon}>⋯</span>
-        </button>
       </div>
-    </div>
+    </>
   )
 }
 
-const styles = {
-  container: {
+const css = `
+  .va-action-btn:hover  { background: #2e2e2e !important; }
+  .va-sub-btn:hover     { filter: brightness(1.12); }
+  .va-share-item:hover  { background: #2e2e2e !important; }
+`
+
+const S = {
+  wrap: {
     display: 'flex',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    gap: 16,
+    paddingBottom: 16,
+    marginBottom: 16,
+    borderBottom: '1px solid #1f1f1f',
+  },
+  channelRow: {
+    display: 'flex',
     alignItems: 'center',
-    marginBottom: '20px',
-    paddingBottom: '16px',
-    borderBottom: '1px solid #303030',
+    gap: 14,
     flexWrap: 'wrap',
-    gap: '16px',
   },
-  channelInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-  },
-  channelAvatar: {
-    width: '48px',
-    height: '48px',
+  avatar: {
+    width: 46, height: 46,
     borderRadius: '50%',
-    backgroundColor: '#3ea6ff',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '20px',
-    fontWeight: '600',
-  },
-  channelDetails: {
-    marginRight: '16px',
+    fontSize: 19,
+    fontWeight: 800,
+    flexShrink: 0,
+    color: '#fff',
   },
   channelName: {
-    fontSize: '15px',
-    fontWeight: '500',
-    marginBottom: '2px',
+    fontSize: 16,
+    fontWeight: 700,
+    marginBottom: 2,
+    color: '#fff',
   },
-  channelStats: {
-    fontSize: '12px',
-    color: '#aaa',
+  subs: {
+    fontSize: 13,
+    color: '#717171',
   },
-  subscribeButton: {
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: '20px',
-    color: 'white',
-    fontSize: '13px',
-    fontWeight: '500',
+  subBtn: {
+    marginLeft: 'auto',
+    padding: '9px 22px',
+    borderRadius: 24,
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 800,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.2s',
+    minWidth: 116,
   },
-  videoStats: {
+  actionsRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: 10,
+    flexWrap: 'wrap',
   },
-  statsGroup: {
+  likeGroup: {
     display: 'flex',
-    backgroundColor: '#272727',
-    borderRadius: '20px',
+    background: '#1a1a1a',
+    borderRadius: 24,
     overflow: 'hidden',
   },
-  statButton: {
+  actionBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    padding: '8px 16px',
-    backgroundColor: 'transparent',
+    gap: 8,
+    padding: '9px 16px',
     border: 'none',
-    color: 'white',
-    fontSize: '13px',
+    color: '#e0e0e0',
+    fontSize: 14,
+    fontWeight: 700,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'all 0.15s',
   },
-  statIcon: {
-    fontSize: '16px',
+  likeBtnLeft: {
+    borderRight: '1px solid #2a2a2a',
   },
-  shareContainer: {
-    position: 'relative',
+  dislikeBtnRight: {
+    padding: '9px 14px',
   },
-  shareButton: {
+  divider: {
+    width: 1,
+    background: '#2a2a2a',
+    alignSelf: 'stretch',
+  },
+  shareBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    padding: '8px 16px',
-    backgroundColor: '#272727',
+    gap: 8,
+    padding: '9px 18px',
+    background: '#1a1a1a',
     border: 'none',
-    borderRadius: '20px',
-    color: 'white',
-    fontSize: '13px',
+    borderRadius: 24,
+    color: '#e0e0e0',
+    fontSize: 14,
+    fontWeight: 700,
     cursor: 'pointer',
+    transition: 'background 0.15s',
   },
   shareMenu: {
     position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '8px',
-    backgroundColor: '#282828',
-    border: '1px solid #3f3f3f',
-    borderRadius: '8px',
-    padding: '8px 0',
-    zIndex: 100,
-    minWidth: '160px',
+    top: 'calc(100% + 10px)',
+    left: 0,
+    background: '#1e1e1e',
+    border: '1px solid #2a2a2a',
+    borderRadius: 14,
+    padding: '6px 0',
+    zIndex: 200,
+    minWidth: 186,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.6)',
   },
-  shareMenuItem: {
+  shareItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '10px 16px',
-    backgroundColor: 'transparent',
+    gap: 10,
+    padding: '11px 18px',
+    background: 'transparent',
     border: 'none',
-    color: 'white',
-    fontSize: '13px',
+    color: '#e0e0e0',
+    fontSize: 14,
     width: '100%',
     textAlign: 'left',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'background 0.15s',
   },
-  moreButton: {
-    width: '36px',
-    height: '36px',
-    backgroundColor: '#272727',
+  moreBtn: {
+    width: 38, height: 38,
+    background: '#1a1a1a',
     border: 'none',
     borderRadius: '50%',
-    color: 'white',
-    fontSize: '20px',
+    color: '#e0e0e0',
+    fontSize: 20,
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    transition: 'background 0.15s',
   },
 }
 
-// Add hover styles
-const style = document.createElement('style')
-style.textContent = `
-  .subscribe-button:hover {
-    background-color: ${subscribed => subscribed ? '#4f4f4f' : '#cc0000'} !important;
-  }
-  .stat-button:hover {
-    background-color: #3f3f3f !important;
-  }
-  .share-button:hover {
-    background-color: #3f3f3f !important;
-  }
-  .share-menu-item:hover {
-    background-color: #3f3f3f !important;
-  }
-  .more-button:hover {
-    background-color: #3f3f3f !important;
-  }
-`
-document.head.appendChild(style)
+function LikeIcon()    { return <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg> }
+function DislikeIcon() { return <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg> }
+function ShareIcon()   { return <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg> }
+function MoreIcon()    { return <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg> }

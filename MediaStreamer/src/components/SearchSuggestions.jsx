@@ -3,286 +3,234 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSearchHistory } from '../context/SearchHistoryContext'
 
-export default function SearchSuggestions({ 
-  query, 
-  onSelect, 
-  onClose,
-  suggestions = [] 
-}) {
+export default function SearchSuggestions({ query, onSelect, onClose }) {
   const navigate = useNavigate()
   const { searchHistory, removeFromSearchHistory, getPopularSearches } = useSearchHistory()
-  const [activeIndex, setActiveIndex] = useState(-1)
-  const [showHistory, setShowHistory] = useState(true)
+  const [activeIdx, setActiveIdx] = useState(-1)
 
-  const recentSearches = getPopularSearches(5)
-  const filteredSuggestions = query 
-    ? suggestions.filter(s => 
-        s.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 5)
-    : []
+  const filtered = query?.trim()
+    ? searchHistory.filter(i => i.query.toLowerCase().includes(query.toLowerCase())).slice(0, 7)
+    : searchHistory.slice(0, 7)
 
-  const handleKeyDown = (e) => {
-    const items = query ? filteredSuggestions : recentSearches
-    if (items.length === 0) return
-
-    switch(e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setActiveIndex(prev => (prev + 1) % items.length)
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        setActiveIndex(prev => (prev - 1 + items.length) % items.length)
-        break
-      case 'Enter':
-        if (activeIndex >= 0) {
-          handleSelect(items[activeIndex])
-        }
-        break
-      case 'Escape':
-        onClose()
-        break
-    }
-  }
+  const popular = getPopularSearches(5)
 
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [query, suggestions, activeIndex])
+    const fn = (e) => {
+      const items = filtered
+      if (!items.length) return
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => (i + 1) % items.length) }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); setActiveIdx(i => (i - 1 + items.length) % items.length) }
+      if (e.key === 'Enter' && activeIdx >= 0) handleSelect(items[activeIdx].query)
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', fn)
+    return () => document.removeEventListener('keydown', fn)
+  }, [filtered, activeIdx, onClose])
 
-  const handleSelect = (searchTerm) => {
-    onSelect(searchTerm)
-    navigate(`/?search=${encodeURIComponent(searchTerm)}`)
+  const handleSelect = (q) => {
+    onSelect(q)
+    navigate(`/?search=${encodeURIComponent(q)}`)
     onClose()
-  }
-
-  const handleRemoveHistory = (e, searchId) => {
-    e.stopPropagation()
-    removeFromSearchHistory(searchId)
   }
 
   if (!query && searchHistory.length === 0) return null
 
   return (
-    <div style={styles.container}>
-      {/* Search suggestions or history */}
-      {query ? (
-        // Live search suggestions
-        filteredSuggestions.length > 0 ? (
-          filteredSuggestions.map((suggestion, index) => (
-            <div
-              key={suggestion}
-              style={{
-                ...styles.suggestionItem,
-                backgroundColor: index === activeIndex ? '#3f3f3f' : 'transparent'
-              }}
-              onClick={() => handleSelect(suggestion)}
-              onMouseEnter={() => setActiveIndex(index)}
-            >
-              <span style={styles.searchIcon}>🔍</span>
-              <span style={styles.suggestionText}>{suggestion}</span>
+    <>
+      <style>{css}</style>
+      <div style={S.panel}>
+
+        {query?.trim() ? (
+          /* ── Filtered results ── */
+          filtered.length > 0 ? (
+            filtered.map((item, i) => (
+              <div
+                key={item.id}
+                className="ss-item"
+                style={{ ...S.item, background: i === activeIdx ? '#2a2a2a' : 'transparent' }}
+                onClick={() => handleSelect(item.query)}
+                onMouseEnter={() => setActiveIdx(i)}
+              >
+                <SearchIcon />
+                <span style={S.itemText}>{item.query}</span>
+              </div>
+            ))
+          ) : (
+            <div style={S.noResult}>
+              <SearchIcon />
+              <span>Search for "{query}"</span>
             </div>
-          ))
+          )
         ) : (
-          <div style={styles.noResults}>
-            <span style={styles.searchIcon}>🔍</span>
-            <span>Search for "{query}"</span>
-          </div>
-        )
-      ) : (
-        // Search history
-        <>
-          <div style={styles.header}>
-            <span style={styles.headerTitle}>Recent searches</span>
-            {searchHistory.length > 0 && (
-              <button 
-                onClick={() => {
-                  if (window.confirm('Clear all search history?')) {
-                    localStorage.removeItem('searchHistory')
-                    window.location.reload()
-                  }
-                }}
-                style={styles.clearButton}
+          /* ── Recent + Popular ── */
+          <>
+            <div style={S.sectionHeader}>
+              <span style={S.sectionLabel}>Recent searches</span>
+              <button
+                className="ss-clear-btn"
+                style={S.clearBtn}
+                onClick={() => { localStorage.removeItem('searchHistory'); window.location.reload() }}
               >
                 Clear all
               </button>
-            )}
-          </div>
-          
-          {searchHistory.slice(0, 5).map((item, index) => (
-            <div
-              key={item.id}
-              style={{
-                ...styles.suggestionItem,
-                backgroundColor: index === activeIndex ? '#3f3f3f' : 'transparent'
-              }}
-              onClick={() => handleSelect(item.query)}
-            >
-              <span style={styles.historyIcon}>🕒</span>
-              <span style={styles.suggestionText}>{item.query}</span>
-              <button
-                onClick={(e) => handleRemoveHistory(e, item.id)}
-                style={styles.removeButton}
-                title="Remove from history"
-              >
-                ✕
-              </button>
             </div>
-          ))}
 
-          {/* Popular searches */}
-          {recentSearches.length > 0 && (
-            <>
-              <div style={styles.divider} />
-              <div style={styles.popularSection}>
-                <span style={styles.popularTitle}>Popular searches</span>
-                <div style={styles.popularTags}>
-                  {recentSearches.map((term, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSelect(term)}
-                      style={styles.popularTag}
-                    >
-                      🔥 {term}
-                    </button>
-                  ))}
-                </div>
+            {searchHistory.slice(0, 6).map((item, i) => (
+              <div
+                key={item.id}
+                className="ss-item"
+                style={{ ...S.item, background: i === activeIdx ? '#2a2a2a' : 'transparent' }}
+                onClick={() => handleSelect(item.query)}
+              >
+                <ClockIcon />
+                <span style={S.itemText}>{item.query}</span>
+                <button
+                  className="ss-remove-btn"
+                  style={S.removeBtn}
+                  onClick={e => { e.stopPropagation(); removeFromSearchHistory(item.id) }}
+                >
+                  ✕
+                </button>
               </div>
-            </>
-          )}
-        </>
-      )}
-    </div>
+            ))}
+
+            {popular.length > 0 && (
+              <>
+                <div style={S.divider} />
+                <div style={S.popularSection}>
+                  <p style={S.popularLabel}>Trending</p>
+                  <div style={S.popularTags}>
+                    {popular.map((term, i) => (
+                      <button
+                        key={i}
+                        className="ss-tag"
+                        style={S.tag}
+                        onClick={() => handleSelect(term)}
+                      >
+                        🔥 {term}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </>
   )
 }
 
-const styles = {
-  container: {
+const css = `
+  .ss-item:hover       { background: #2a2a2a !important; }
+  .ss-item:hover .ss-remove-btn { display: flex !important; }
+  .ss-remove-btn:hover { background: #ff4444 !important; color: #fff !important; }
+  .ss-tag:hover        { background: #3a3a3a !important; }
+  .ss-clear-btn:hover  { text-decoration: underline !important; }
+`
+
+const S = {
+  panel: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: '#282828',
-    border: '1px solid #3f3f3f',
-    borderRadius: '12px',
-    marginTop: '4px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-    zIndex: 1100,
+    top: 'calc(100% + 8px)',
+    left: 0, right: 0,
+    background: '#181818',
+    border: '1px solid #2e2e2e',
+    borderRadius: 14,
     overflow: 'hidden',
+    boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+    zIndex: 3000,
   },
-  header: {
+  sectionHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '10px 16px',
-    borderBottom: '1px solid #3f3f3f',
+    padding: '10px 16px 6px',
+    borderBottom: '1px solid #2a2a2a',
   },
-  headerTitle: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#aaa',
+  sectionLabel: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  clearButton: {
+  clearBtn: {
     background: 'none',
     border: 'none',
     color: '#3ea6ff',
-    fontSize: '12px',
+    fontSize: 12,
     cursor: 'pointer',
-    padding: '4px 8px',
+    fontWeight: 600,
+    padding: '2px 6px',
   },
-  suggestionItem: {
+  item: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 12,
     padding: '10px 16px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
-    position: 'relative',
-  },
-  searchIcon: {
-    fontSize: '16px',
+    transition: 'background 0.15s',
     color: '#aaa',
   },
-  historyIcon: {
-    fontSize: '16px',
-    color: '#aaa',
-  },
-  suggestionText: {
+  itemText: {
     flex: 1,
-    fontSize: '14px',
-    color: 'white',
+    fontSize: 14,
+    color: '#fff',
   },
-  removeButton: {
-    width: '24px',
-    height: '24px',
-    backgroundColor: 'transparent',
+  removeBtn: {
+    display: 'none',
+    width: 26, height: 26,
+    background: 'transparent',
     border: 'none',
-    color: '#666',
-    fontSize: '14px',
+    color: '#555',
     cursor: 'pointer',
     borderRadius: '50%',
-    display: 'none',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.2s',
+    fontSize: 12,
+    transition: 'all 0.15s',
   },
-  noResults: {
+  noResult: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: 12,
     padding: '16px',
     color: '#aaa',
-    fontSize: '14px',
+    fontSize: 14,
   },
   divider: {
-    height: '1px',
-    backgroundColor: '#3f3f3f',
-    margin: '8px 0',
+    height: 1,
+    background: '#2a2a2a',
+    margin: '6px 0',
   },
   popularSection: {
-    padding: '12px 16px',
+    padding: '10px 16px 14px',
   },
-  popularTitle: {
-    display: 'block',
-    fontSize: '12px',
-    color: '#aaa',
-    marginBottom: '10px',
+  popularLabel: {
+    fontSize: 11,
+    color: '#555',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
   },
   popularTags: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '8px',
+    gap: 8,
   },
-  popularTag: {
-    padding: '6px 12px',
-    backgroundColor: '#3f3f3f',
+  tag: {
+    padding: '6px 14px',
+    background: '#2a2a2a',
     border: 'none',
-    borderRadius: '16px',
-    color: 'white',
-    fontSize: '12px',
+    borderRadius: 18,
+    color: '#e0e0e0',
+    fontSize: 13,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'background 0.15s',
   },
 }
 
-// Add hover styles
-const style = document.createElement('style')
-style.textContent = `
-  .suggestion-item:hover {
-    background-color: #3f3f3f !important;
-  }
-  .suggestion-item:hover .remove-button {
-    display: flex !important;
-  }
-  .remove-button:hover {
-    background-color: #ff4444 !important;
-    color: white !important;
-  }
-  .clear-button:hover {
-    text-decoration: underline !important;
-  }
-  .popular-tag:hover {
-    background-color: #4f4f4f !important;
-  }
-`
-document.head.appendChild(style)
+function SearchIcon() { return <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg> }
+function ClockIcon()  { return <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg> }
