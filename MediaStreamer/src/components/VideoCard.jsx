@@ -1,26 +1,37 @@
 // components/VideoCard.jsx
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export default function VideoCard({ video }) {
+  const [imgError, setImgError] = useState(false)
+
+  const getThumbnail = () => {
+    if (imgError || !video.thumbnail) {
+      return `https://placehold.co/320x180/1a1a1a/666666?text=${encodeURIComponent(video.channel || 'Video')}`
+    }
+    return video.thumbnail
+  }
+
   return (
     <Link to={`/watch/${video.id}`} style={styles.card}>
       <div style={styles.thumbnail}>
         <img 
-          src={video.thumbnail} 
+          src={getThumbnail()} 
           alt={video.title}
           style={styles.thumbnailImg}
+          onError={() => setImgError(true)}
+          loading="lazy"
         />
       </div>
       <div style={styles.info}>
         <div style={styles.avatar}>
-          {video.channel?.charAt(0)}
+          {video.channel?.charAt(0) || '?'}
         </div>
         <div style={styles.details}>
-          <h3 style={styles.title}>{video.title}</h3>
-          <p style={styles.channel}>{video.channel}</p>
+          <h3 style={styles.title}>{video.title || 'Untitled Video'}</h3>
+          <p style={styles.channel}>{video.channel || 'Unknown Channel'}</p>
           <p style={styles.meta}>
-            {video.views} • {video.time}
+            {video.views || 'No views'} • {video.time || 'Recently'}
           </p>
         </div>
       </div>
@@ -39,7 +50,7 @@ const styles = {
   thumbnail: {
     width: '100%',
     aspectRatio: '16/9',
-    backgroundColor: '#222',
+    backgroundColor: '#1a1a1a',
     borderRadius: '8px',
     overflow: 'hidden',
     marginBottom: '8px',

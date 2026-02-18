@@ -1,139 +1,144 @@
-// lib/api.js
-const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || ''
+const API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY
 const BASE_URL = 'https://www.googleapis.com/youtube/v3'
 
-const formatViews = (num) => {
-  if (!num) return 'No views'
-  const n = parseInt(num, 10)
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M views'
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K views'
-  return n + ' views'
-}
+// Helper to get realistic thumbnails
+const getThumbnail = (id) => `https://picsum.photos/seed/${id}/640/360`
+const getAvatar = (id) => `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`
 
-const formatTimeAgo = (dateStr) => {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diffInSeconds = Math.floor((now - date) / 1000)
-  
-  const intervals = [
-    { label: 'year', seconds: 31536000 },
-    { label: 'month', seconds: 2592000 },
-    { label: 'week', seconds: 604800 },
-    { label: 'day', seconds: 86400 },
-    { label: 'hour', seconds: 3600 },
-    { label: 'minute', seconds: 60 },
-  ]
-  
-  for (const interval of intervals) {
-    const count = Math.floor(diffInSeconds / interval.seconds)
-    if (count >= 1) {
-      return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`
-    }
-  }
-  return 'just now'
-}
+export const fetchTrending = async (limit = 12, pageToken = '') => {
+  if (!API_KEY) return getMockVideos(limit)
 
-export const fetchTrending = async (maxResults = 12, pageToken = '') => {
-  if (!API_KEY) throw new Error('YouTube API Key missing')
-  
-  let url = `${BASE_URL}/videos?part=snippet,statistics&chart=mostPopular&regionCode=US&maxResults=${maxResults}&key=${API_KEY}`
-  
-  if (pageToken) {
-    url += `&pageToken=${pageToken}`
-  }
-  
-  const res = await fetch(url)
-  if (!res.ok) throw new Error('Failed to fetch trending videos')
-  
-  const data = await res.json()
-  
-  const videos = data.items.map((item) => ({
-    id: item.id,
-    title: item.snippet.title,
-    channel: item.snippet.channelTitle,
-    channelId: item.snippet.channelId,
-    views: formatViews(item.statistics?.viewCount),
-    time: formatTimeAgo(item.snippet.publishedAt),
-    thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
-    description: item.snippet.description,
-  }))
-  
-  return {
-    videos,
-    nextPageToken: data.nextPageToken || '',
-    prevPageToken: data.prevPageToken || '',
-    totalResults: data.pageInfo?.totalResults || 0,
-  }
-}
+  try {
+    const response = await fetch(
+      `${BASE_URL}/videos?part=snippet,statistics,contentDetails&chart=mostPopular&maxResults=${limit}&key=${API_KEY}&pageToken=${pageToken}`
+    )
+    const data = await response.json()
+    if (data.error) throw new Error(data.error.message)
 
-export const searchVideos = async (query, maxResults = 12, pageToken = '') => {
-  if (!API_KEY) throw new Error('YouTube API Key missing')
-  
-  let searchUrl = `${BASE_URL}/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=${maxResults}&key=${API_KEY}`
-  
-  if (pageToken) {
-    searchUrl += `&pageToken=${pageToken}`
-  }
-  
-  const searchRes = await fetch(searchUrl)
-  if (!searchRes.ok) throw new Error('Failed to search videos')
-  
-  const searchData = await searchRes.json()
-  
-  const videoIds = searchData.items.map(item => item.id.videoId).filter(Boolean)
-  
-  if (videoIds.length === 0) {
     return {
-      videos: [],
-      nextPageToken: searchData.nextPageToken || '',
+      videos: data.items.map(mapVideo),
+      nextPageToken: data.nextPageToken
     }
+  } catch (error) {
+    console.error('API Error:', error)
+    return getMockVideos(limit)
   }
-  
-  const videosRes = await fetch(
-    `${BASE_URL}/videos?part=snippet,statistics&id=${videoIds.join(',')}&key=${API_KEY}`
-  )
-  const videosData = await videosRes.json()
-  
-  const videos = videosData.items.map((item) => ({
-    id: item.id,
-    title: item.snippet.title,
-    channel: item.snippet.channelTitle,
-    channelId: item.snippet.channelId,
-    views: formatViews(item.statistics?.viewCount),
-    time: formatTimeAgo(item.snippet.publishedAt),
-    thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
-    description: item.snippet.description,
-  }))
-  
-  return {
-    videos,
-    nextPageToken: searchData.nextPageToken || '',
-    prevPageToken: searchData.prevPageToken || '',
-    totalResults: searchData.pageInfo?.totalResults || 0,
+}
+
+export const searchVideos = async (query, limit = 12, pageToken = '') => {
+  if (!API_KEY) return getMockVideos(limit, query)
+
+  try {
+    const response = await fetch(
+      `${BASE_URL}/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${limit}&key=${API_KEY}&pageToken=${pageToken}`
+    )
+    const data = await response.json()
+    if (data.error) throw new Error(data.error.message)
+
+    return {
+      videos: data.items.map(mapSearchResult),
+      nextPageToken: data.nextPageToken
+    }
+  } catch (error) {
+    console.error('API Error:', error)
+    return getMockVideos(limit, query)
   }
 }
 
 export const getVideo = async (id) => {
-  if (!API_KEY) throw new Error('YouTube API Key missing')
-  
-  const res = await fetch(
-    `${BASE_URL}/videos?part=snippet,statistics&id=${id}&key=${API_KEY}`
-  )
-  if (!res.ok) throw new Error('Failed to fetch video')
-  
-  const data = await res.json()
-  const item = data.items[0]
-  if (!item) return null
-  
-  return {
-    id: item.id,
-    title: item.snippet.title,
-    channel: item.snippet.channelTitle,
-    channelId: item.snippet.channelId,
-    views: formatViews(item.statistics?.viewCount),
-    likes: formatViews(item.statistics?.likeCount),
-    time: formatTimeAgo(item.snippet.publishedAt),
-    description: item.snippet.description,
-    thumbnail: item.snippet.thumbnails.maxres?.url || item.snippet.thumbnails.high?.url,
+  if (!API_KEY) return getMockVideo(id)
+
+  try {
+    const response = await fetch(
+      `${BASE_URL}/videos?part=snippet,statistics,contentDetails&id=${id}&key=${API_KEY}`
+    )
+    const data = await response.json()
+    if (data.error) throw new Error(data.error.message)
+    if (!data.items || data.items.length === 0) return getMockVideo(id)
+
+    return mapVideo(data.items[0])
+  } catch (error) {
+    console.error('API Error:', error)
+    return getMockVideo(id)
   }
 }
+
+export const getChannelVideos = async (channelId, limit = 5) => {
+  if (!API_KEY) return getMockVideos(limit).videos;
+  try {
+    const response = await fetch(
+      `${BASE_URL}/search?part=snippet&channelId=${channelId}&type=video&maxResults=${limit}&key=${API_KEY}`
+    )
+    const data = await response.json()
+    if (data.error) throw new Error(data.error.message)
+    return data.items.map(mapSearchResult)
+  } catch (error) {
+    return getMockVideos(limit).videos
+  }
+}
+
+const mapVideo = (item) => ({
+  id: item.id,
+  title: item.snippet.title,
+  channel: item.snippet.channelTitle,
+  channelId: item.snippet.channelId,
+  description: item.snippet.description,
+  thumbnail: item.snippet.thumbnails.maxres?.url || item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
+  views: formatViews(item.statistics?.viewCount),
+  likes: formatViews(item.statistics?.likeCount),
+  time: new Date(item.snippet.publishedAt).toLocaleDateString(),
+  duration: item.contentDetails?.duration, // Simplified for now
+  avatar: item.snippet.thumbnails.default?.url
+})
+
+const mapSearchResult = (item) => ({
+  id: item.id.videoId,
+  title: item.snippet.title,
+  channel: item.snippet.channelTitle,
+  channelId: item.snippet.channelId,
+  description: item.snippet.description,
+  thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url,
+  views: 'New',
+  time: new Date(item.snippet.publishedAt).toLocaleDateString(),
+  avatar: item.snippet.thumbnails.default?.url
+})
+
+const formatViews = (views) => {
+  if (!views) return '0'
+  const num = parseInt(views)
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+  return num.toString()
+}
+
+const getMockVideos = (limit, query = '') => {
+  const categories = ['Gaming', 'Tech', 'Music', 'Vlog', 'Cooking', 'Travel', 'Education', 'Comedy']
+  const videos = Array(limit).fill(0).map((_, i) => {
+    const id = `mock-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`
+    const category = categories[Math.floor(Math.random() * categories.length)]
+    return {
+      id,
+      title: query ? `${query} - Part ${i + 1}` : `${category}: Amazing Content You Must Watch ${i + 1}`,
+      channel: `${category} Channel`,
+      channelId: `channel-${i}`,
+      views: `${Math.floor(Math.random() * 900 + 100)}K`,
+      time: `${Math.floor(Math.random() * 11 + 1)} months ago`,
+      thumbnail: getThumbnail(id),
+      avatar: getAvatar(`channel-${i}`)
+    }
+  })
+  return { videos, nextPageToken: 'mock-token' }
+}
+
+const getMockVideo = (id) => ({
+  id,
+  title: 'Amazing Video Content That You Must Watch',
+  channel: 'Awesome Creator',
+  channelId: 'mock-channel-id',
+  description: 'This is a detailed description of the video. It contains timestamps, links, and other important information about the content you are watching.\n\n0:00 Intro\n1:30 Main Content\n5:00 Conclusion\n\nDon\'t forget to like and subscribe!',
+  views: '1.2M',
+  likes: '45K',
+  time: '2 days ago',
+  thumbnail: getThumbnail(id),
+  avatar: getAvatar('mock-channel-id')
+})

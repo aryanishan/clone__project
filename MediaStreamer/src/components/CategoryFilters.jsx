@@ -15,9 +15,9 @@ export default function CategoryFilters({ categories, selectedCategory, onSelect
   }
 
   return (
-    <div className="yt-category-filters">
+    <div style={styles.container}>
       <button 
-        className="yt-scroll-button yt-scroll-left"
+        style={{...styles.scrollButton, ...styles.scrollLeft}}
         onClick={() => scroll('left')}
         aria-label="Scroll left"
       >
@@ -26,11 +26,14 @@ export default function CategoryFilters({ categories, selectedCategory, onSelect
         </svg>
       </button>
 
-      <div className="yt-categories" ref={scrollRef}>
+      <div style={styles.categories} ref={scrollRef}>
         {categories.map((category) => (
           <button
             key={category}
-            className={`yt-category-chip ${selectedCategory === category ? 'active' : ''}`}
+            style={{
+              ...styles.categoryChip,
+              ...(selectedCategory === category ? styles.categoryChipActive : {})
+            }}
             onClick={() => onSelectCategory(category)}
           >
             {category}
@@ -39,7 +42,7 @@ export default function CategoryFilters({ categories, selectedCategory, onSelect
       </div>
 
       <button 
-        className="yt-scroll-button yt-scroll-right"
+        style={{...styles.scrollButton, ...styles.scrollRight}}
         onClick={() => scroll('right')}
         aria-label="Scroll right"
       >
@@ -47,96 +50,64 @@ export default function CategoryFilters({ categories, selectedCategory, onSelect
           <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
         </svg>
       </button>
-
-      <style jsx>{`
-        .yt-category-filters {
-          position: relative;
-          display: flex;
-          align-items: center;
-          margin-bottom: var(--space-xl);
-          padding: 0 var(--space-xl);
-        }
-        
-        .yt-categories {
-          display: flex;
-          gap: var(--space-md);
-          overflow-x: auto;
-          scrollbar-width: none;
-          padding: var(--space-sm) 0;
-          flex: 1;
-        }
-        
-        .yt-categories::-webkit-scrollbar {
-          display: none;
-        }
-        
-        .yt-category-chip {
-          padding: var(--space-sm) var(--space-md);
-          background-color: var(--yt-black-lighter);
-          border: none;
-          border-radius: var(--radius-full);
-          color: var(--yt-white);
-          font-size: var(--font-sm);
-          font-weight: 500;
-          white-space: nowrap;
-          cursor: pointer;
-          transition: all var(--transition-fast);
-        }
-        
-        .yt-category-chip:hover {
-          background-color: var(--yt-gray);
-        }
-        
-        .yt-category-chip.active {
-          background-color: var(--yt-white);
-          color: var(--yt-black);
-        }
-        
-        .yt-scroll-button {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 40px;
-          height: 40px;
-          border-radius: var(--radius-full);
-          background-color: var(--yt-black);
-          border: 1px solid var(--yt-gray);
-          color: var(--yt-white);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          z-index: 10;
-          opacity: 0;
-          transition: opacity var(--transition-fast);
-        }
-        
-        .yt-category-filters:hover .yt-scroll-button {
-          opacity: 1;
-        }
-        
-        .yt-scroll-left {
-          left: 0;
-        }
-        
-        .yt-scroll-right {
-          right: 0;
-        }
-        
-        .yt-scroll-button:hover {
-          background-color: var(--yt-gray);
-        }
-        
-        @media (max-width: 768px) {
-          .yt-category-filters {
-            padding: 0 var(--space-md);
-          }
-          
-          .yt-scroll-button {
-            display: none;
-          }
-        }
-      `}</style>
     </div>
   )
+}
+
+const styles = {
+  container: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '24px',
+    padding: '0 24px',
+  },
+  categories: {
+    display: 'flex',
+    gap: '12px',
+    overflowX: 'auto',
+    scrollbarWidth: 'none',
+    padding: '8px 0',
+    flex: 1,
+  },
+  categoryChip: {
+    padding: '8px 16px',
+    backgroundColor: '#272727',
+    border: 'none',
+    borderRadius: '20px',
+    color: 'white',
+    fontSize: '14px',
+    fontWeight: 500,
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  categoryChipActive: {
+    backgroundColor: 'white',
+    color: 'black',
+  },
+  scrollButton: {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    backgroundColor: '#0f0f0f',
+    border: '1px solid #303030',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    zIndex: 10,
+    opacity: 0,
+    transition: 'opacity 0.2s',
+  },
+  scrollLeft: {
+    left: 0,
+  },
+  scrollRight: {
+    right: 0,
+  },
 }
