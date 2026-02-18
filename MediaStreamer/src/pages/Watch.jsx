@@ -3,7 +3,20 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getVideo } from '../lib/api'
 import { useHistory } from '../context/HistoryContext'
-
+// In Watch.jsx
+useEffect(() => {
+  if (video) {
+    addNotification({
+      type: 'subscription',
+      channel: video.channel,
+      message: 'uploaded a new video',
+      action: video.title,
+      videoId: video.id,
+      videoThumb: video.thumbnail,
+      channelAvatar: video.channel?.charAt(0)
+    })
+  }
+}, [video])
 export default function Watch() {
   const { id } = useParams()
   const [video, setVideo] = useState(null)

@@ -1,5 +1,17 @@
 import React, { useState } from 'react'
+// In Upload.jsx or any component
+import { useNotifications } from '../context/NotificationContext'
 
+// Inside your component
+const { addNotification } = useNotifications()
+
+// When upload is successful
+addNotification({
+  type: 'upload',
+  channel: 'Your Channel',
+  message: 'Your video was uploaded successfully',
+  action: 'Video is now live'
+})
 export default function Upload() {
   const [title, setTitle] = useState('')
   const [channel, setChannel] = useState('')
