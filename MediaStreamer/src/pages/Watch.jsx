@@ -3,25 +3,14 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getVideo } from '../lib/api'
 import { useHistory } from '../context/HistoryContext'
-// In Watch.jsx
-useEffect(() => {
-  if (video) {
-    addNotification({
-      type: 'subscription',
-      channel: video.channel,
-      message: 'uploaded a new video',
-      action: video.title,
-      videoId: video.id,
-      videoThumb: video.thumbnail,
-      channelAvatar: video.channel?.charAt(0)
-    })
-  }
-}, [video])
+import { useNotifications } from '../context/NotificationContext'
+
 export default function Watch() {
   const { id } = useParams()
   const [video, setVideo] = useState(null)
   const [loading, setLoading] = useState(true)
   const { addToHistory } = useHistory()
+  const { addNotification } = useNotifications()
 
   useEffect(() => {
     let mounted = true
@@ -45,6 +34,20 @@ export default function Watch() {
     loadVideo()
     return () => { mounted = false }
   }, [id, addToHistory])
+
+  useEffect(() => {
+    if (video) {
+      addNotification({
+        type: 'subscription',
+        channel: video.channel,
+        message: 'uploaded a new video',
+        action: video.title,
+        videoId: video.id,
+        videoThumb: video.thumbnail,
+        channelAvatar: video.channel?.charAt(0)
+      })
+    }
+  }, [video, addNotification])
 
   if (loading) {
     return (
