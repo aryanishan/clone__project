@@ -6,12 +6,13 @@ export default function Sidebar() {
   const location = useLocation()
   
   const menuItems = [
-    { icon: '🏠', label: 'Home', path: '/' },
-    { icon: '▶️', label: 'Shorts', path: '/shorts' },
-    { icon: '📺', label: 'Subscriptions', path: '/subscriptions' },
-    { icon: '📚', label: 'Library', path: '/library' },
-    { icon: '📜', label: 'History', path: '/history' }, // Added History
-  ]
+  { icon: '🏠', label: 'Home', path: '/' },
+  { icon: '▶️', label: 'Shorts', path: '/shorts' },
+  { icon: '📺', label: 'Subscriptions', path: '/subscriptions' },
+  { icon: '📚', label: 'Library', path: '/library' },
+  { icon: '📜', label: 'History', path: '/history' },
+  { icon: '🔍', label: 'Search History', path: '/search-history' }, // Added
+]
 
   return (
     <aside style={styles.sidebar}>

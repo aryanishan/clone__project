@@ -1,20 +1,65 @@
-// components/navbar.jsx
-import React, { useState } from 'react'
+// components/navbar.jsx (updated search section)
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import NotificationDropdown from './NotificationDropdown'
+import SearchSuggestions from './SearchSuggestions'
 import { useNotifications } from '../context/NotificationContext'
+import { useSearchHistory } from '../context/SearchHistoryContext'
 
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestions, setSuggestions] = useState([])
+  const searchRef = useRef(null)
   const navigate = useNavigate()
+  
   const { unreadCount, setShowDropdown } = useNotifications()
+  const { addToSearchHistory } = useSearchHistory()
+
+  // Mock suggestions - in real app, these would come from an API
+  const popularSearches = [
+    'star wars', 'marvel', 'trailer', 'music', 'gaming',
+    'react tutorial', 'javascript', 'movie', 'comedy', 'sports'
+  ]
+
+  useEffect(() => {
+    // Filter suggestions based on input
+    if (searchQuery) {
+      const filtered = popularSearches.filter(s => 
+        s.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      setSuggestions(filtered)
+    } else {
+      setSuggestions([])
+    }
+  }, [searchQuery])
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
+      addToSearchHistory(searchQuery)
       navigate(`/?search=${encodeURIComponent(searchQuery)}`)
+      setShowSuggestions(false)
     }
+  }
+
+  const handleSuggestionSelect = (suggestion) => {
+    setSearchQuery(suggestion)
+    addToSearchHistory(suggestion)
+    navigate(`/?search=${encodeURIComponent(suggestion)}`)
+    setShowSuggestions(false)
   }
 
   const toggleNotifications = () => {
@@ -40,14 +85,15 @@ export default function Navbar() {
         </Link>
       </div>
 
-      {/* Search section */}
-      <div style={styles.searchSection}>
+      {/* Search section with suggestions */}
+      <div style={styles.searchSection} ref={searchRef}>
         <form onSubmit={handleSearch} style={styles.searchForm}>
           <input
             type="text"
             placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
             style={styles.searchInput}
           />
           <button type="submit" style={styles.searchButton}>
@@ -56,17 +102,27 @@ export default function Navbar() {
             </svg>
           </button>
         </form>
+        
+        {/* Search suggestions dropdown */}
+        {showSuggestions && (
+          <SearchSuggestions
+            query={searchQuery}
+            suggestions={suggestions}
+            onSelect={handleSuggestionSelect}
+            onClose={() => setShowSuggestions(false)}
+          />
+        )}
       </div>
 
       {/* Right section */}
       <div style={styles.rightSection}>
-        <button style={styles.iconButton}>
+        <Link to="/upload" style={styles.iconButton}>
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
           </svg>
-        </button>
+        </Link>
         
-        {/* Notification Button with Badge */}
+        {/* Notification Button */}
         <div style={styles.notificationContainer}>
           <button 
             onClick={toggleNotifications}
@@ -128,6 +184,7 @@ const styles = {
     flex: 1,
     maxWidth: '600px',
     margin: '0 20px',
+    position: 'relative',
   },
   searchForm: {
     display: 'flex',
@@ -175,6 +232,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    textDecoration: 'none',
   },
   notificationContainer: {
     position: 'relative',
@@ -211,15 +269,3 @@ const styles = {
     fontWeight: '500',
   },
 }
-
-// Add hover effects
-const style = document.createElement('style')
-style.textContent = `
-  .icon-button:hover {
-    background-color: #272727 !important;
-  }
-  .search-button:hover {
-    background-color: #3f3f3f !important;
-  }
-`
-document.head.appendChild(style)
