@@ -17,17 +17,17 @@ export default function Navbar() {
     <nav style={styles.navbar}>
       {/* Left section */}
       <div style={styles.leftSection}>
-        <button style={styles.iconButton}>
+        {/* <button style={styles.iconButton}>
           <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
           </svg>
-        </button>
+        </button> */}
         
         <Link to="/" style={styles.logo}>
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="#ff0000">
+          {/* <svg viewBox="0 0 24 24" width="28" height="28" fill="#ff0000">
             <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-          </svg>
-          <span style={styles.logoText}>YouTube</span>
+          </svg> */}
+          <span style={styles.logoText}>MediaStreamer</span>
         </Link>
       </div>
 
@@ -92,12 +92,12 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     textDecoration: 'none',
-    color: 'white',
+    color: 'red',
     gap: '4px',
   },
   logoText: {
     fontSize: '18px',
-    fontWeight: '500',
+    fontWeight: '1000',
   },
   searchSection: {
     flex: 1,

@@ -10,7 +10,7 @@ export default function Sidebar() {
     { icon: '▶️', label: 'Shorts', path: '/shorts' },
     { icon: '📺', label: 'Subscriptions', path: '/subscriptions' },
     { icon: '📚', label: 'Library', path: '/library' },
-    { icon: '📜', label: 'History', path: '/history' },
+    { icon: '📜', label: 'History', path: '/history' }, // Added History
   ]
 
   return (
@@ -38,7 +38,7 @@ export default function Sidebar() {
 const styles = {
   sidebar: {
     width: '200px',
-    backgroundColor: '#000000',
+    backgroundColor: '#0f0f0f',
     height: 'calc(100vh - 56px)',
     position: 'sticky',
     top: '56px',
@@ -53,6 +53,7 @@ const styles = {
     color: 'white',
     gap: '16px',
     cursor: 'pointer',
+    transition: 'background-color 0.2s',
   },
   icon: {
     fontSize: '20px',

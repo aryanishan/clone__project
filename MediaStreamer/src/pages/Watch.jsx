@@ -2,11 +2,13 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getVideo } from '../lib/api'
+import { useHistory } from '../context/HistoryContext'
 
 export default function Watch() {
   const { id } = useParams()
   const [video, setVideo] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { addToHistory } = useHistory()
 
   useEffect(() => {
     let mounted = true
@@ -17,6 +19,8 @@ export default function Watch() {
         const videoData = await getVideo(id)
         if (mounted && videoData) {
           setVideo(videoData)
+          // Save to history when video loads
+          addToHistory(videoData)
         }
       } catch (error) {
         console.error('Failed to load video:', error)
@@ -27,7 +31,7 @@ export default function Watch() {
 
     loadVideo()
     return () => { mounted = false }
-  }, [id])
+  }, [id, addToHistory])
 
   if (loading) {
     return (
@@ -48,7 +52,7 @@ export default function Watch() {
 
   return (
     <div style={styles.container}>
-      {/* Main Video Section - Full width */}
+      {/* Main Video Section */}
       <div style={styles.videoSection}>
         <div style={styles.playerContainer}>
           <iframe
@@ -61,7 +65,7 @@ export default function Watch() {
           />
         </div>
 
-        {/* Video Info Below Player */}
+        {/* Video Info */}
         <div style={styles.infoSection}>
           <h1 style={styles.title}>{video.title}</h1>
           
@@ -89,10 +93,6 @@ export default function Watch() {
                 <span style={styles.actionIcon}>↗️</span>
                 <span>Share</span>
               </button>
-              <button style={styles.actionButton}>
-                <span style={styles.actionIcon}>🔖</span>
-                <span>Save</span>
-              </button>
             </div>
           </div>
 
@@ -103,7 +103,7 @@ export default function Watch() {
         </div>
       </div>
 
-      {/* Navigation to go back */}
+      {/* Navigation */}
       <div style={styles.navigation}>
         <Link to="/" style={styles.backButton}>
           ← Back to Home
@@ -258,15 +258,3 @@ const styles = {
     fontSize: '16px',
   },
 }
-
-// Make action buttons interactive on hover
-const style = document.createElement('style')
-style.textContent = `
-  .action-button:hover {
-    background-color: #3f3f3f !important;
-  }
-  .back-button:hover {
-    background-color: #3f3f3f !important;
-  }
-`
-document.head.appendChild(style)

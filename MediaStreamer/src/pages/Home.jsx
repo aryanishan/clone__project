@@ -1,5 +1,5 @@
 // pages/Home.jsx
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { fetchTrending, searchVideos } from '../lib/api'
 import VideoCard from '../components/VideoCard'
@@ -108,6 +108,19 @@ export default function Home() {
     }
   }
 
+  // Infinite scroll observer
+  const observer = useRef()
+  const lastVideoElementRef = useCallback(node => {
+    if (loadingMore) return
+    if (observer.current) observer.current.disconnect()
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMore()
+      }
+    })
+    if (node) observer.current.observe(node)
+  }, [loadingMore, hasMore, loadMore])
+
   return (
     <div>
       {/* Search header */}
@@ -145,27 +158,17 @@ export default function Home() {
         </div>
       )}
 
-      {/* Load More Button */}
+      {/* Infinite Scroll Sentinel */}
       {!loading && hasMore && (
-        <div style={styles.loadMoreContainer}>
-          <button 
-            onClick={loadMore}
-            disabled={loadingMore}
-            style={{
-              ...styles.loadMoreButton,
-              opacity: loadingMore ? 0.7 : 1,
-              cursor: loadingMore ? 'not-allowed' : 'pointer',
-            }}
-          >
+        <div ref={lastVideoElementRef} style={styles.loadMoreContainer}>
             {loadingMore ? (
-              <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#aaa' }}>
                 <span style={styles.buttonSpinner}></span>
                 <span>Loading more...</span>
-              </>
+              </div>
             ) : (
-              'Load More Videos'
+              <div style={{ height: '20px', width: '100%' }} />
             )}
-          </button>
         </div>
       )}
 
